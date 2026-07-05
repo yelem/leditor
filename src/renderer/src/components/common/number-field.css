@@ -1,0 +1,70 @@
+.numfield {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+}
+
+.numfield__box {
+  display: flex;
+  align-items: stretch;
+  width: 84px;
+  height: 30px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.numfield__box:focus-within {
+  border-color: var(--accent);
+}
+
+.numfield__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  text-align: right;
+}
+
+.numfield__steppers {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 18px;
+  border-left: 1px solid var(--border);
+}
+
+.numfield__steppers button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 7px;
+  line-height: 1;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: none;
+}
+
+.numfield__steppers button:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.numfield__steppers button + button {
+  border-top: 1px solid var(--border);
+}
+
+/* Фиксированная ширина под единицу — чтобы поля выравнивались по колонке. */
+.numfield__suffix {
+  min-width: 26px;
+  font-size: 12px;
+  color: var(--text-faint);
+}

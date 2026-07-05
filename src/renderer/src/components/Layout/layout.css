@@ -1,0 +1,124 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #fff;
+  background: #b3413a;
+  flex: 0 0 auto;
+}
+
+.app__error button {
+  color: #fff;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel--left {
+  flex: 0 0 auto;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+}
+
+.panel--center {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.panel--right {
+  flex: 0 0 auto;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+}
+
+/* Заголовок боковой панели (общий для дерева и чата). */
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.panel__title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.panel__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  line-height: 0;
+}
+
+.panel__action:hover {
+  color: var(--accent);
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+.panel__action svg {
+  display: block;
+}
+
+/* Разделитель-перетаскиватель. */
+.resizer {
+  flex: 0 0 6px;
+  width: 6px;
+  cursor: col-resize;
+  position: relative;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resizer:hover .resizer-grip,
+body.is-resizing .resizer-grip {
+  background: var(--accent);
+}
+
+.resizer-grip {
+  width: 2px;
+  height: 100%;
+  background: transparent;
+  transition: background 0.12s ease;
+}
