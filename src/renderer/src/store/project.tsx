@@ -13,7 +13,7 @@ import { findNode } from '@renderer/lib/tree'
 import { flushAll } from '@renderer/lib/flush-registry'
 import { tGlobal } from '@renderer/lib/i18n'
 
-/** Область сведённого просмотра «всё одной страницей». */
+/** Scope of the combined single-page view. */
 export type CombinedScope = { type: 'all' } | { type: 'folder'; id: string }
 
 interface ProjectState {
@@ -22,45 +22,45 @@ interface ProjectState {
   activeDocId: string | null
   busy: boolean
   error: string | null
-  /** Счётчик сохранений документов — для пересчёта контекста чатом. */
+  /** Document-save counter — triggers chat context recomputation. */
   docVersion: number
-  /** Активный сведённый просмотр (или null — обычный редактор). */
+  /** Active combined view (or null — the regular editor). */
   combinedScope: CombinedScope | null
 }
 
 interface ProjectContextValue extends ProjectState {
   createProject: () => Promise<void>
   openProject: () => Promise<void>
-  /** Открыть проект по известному пути (drag-and-drop / ассоциация). */
+  /** Open a project by a known path (drag-and-drop / association). */
   openProjectByPath: (path: string) => Promise<void>
   closeProject: () => void
   selectDocument: (nodeId: string) => void
-  /** Сохранить манифест на диск и обновить состояние. */
+  /** Save the manifest to disk and update the state. */
   saveManifest: (manifest: ProjectManifest) => Promise<void>
-  /** Изменить настройки поля проекта (сохраняется в project.json). */
+  /** Change the project's writing-area settings (saved to project.json). */
   updateSettings: (partial: Partial<ProjectSettings>) => Promise<void>
   clearError: () => void
 
-  // Мутации дерева (применяются в main, возвращают обновлённый манифест).
+  // Tree mutations (applied in main, return the updated manifest).
   createTreeNode: (parentId: string | null, type: NodeType) => Promise<string | null>
   renameTreeNode: (nodeId: string, title: string) => Promise<void>
-  /** Переместить узлы в корзину (с поддеревьями). */
+  /** Move nodes to trash (with subtrees). */
   trashNodes: (nodeIds: string[]) => Promise<void>
-  /** Восстановить узел из корзины. */
+  /** Restore a node from trash. */
   restoreFromTrash: (nodeId: string) => Promise<void>
-  /** Окончательно удалить элемент корзины. */
+  /** Permanently delete a trash item. */
   deleteFromTrash: (nodeId: string) => Promise<void>
-  /** Очистить корзину целиком. */
+  /** Empty the whole trash. */
   emptyTrash: () => Promise<void>
   moveTreeNode: (nodeId: string, newParentId: string | null, index: number) => Promise<void>
   duplicateTreeNode: (nodeId: string) => Promise<string | null>
-  /** Восстановить проект из снапшота (с защитной копией текущего состояния). */
+  /** Restore the project from a snapshot (with a protective copy of the current state). */
   restoreBackup: (id: string) => Promise<void>
-  /** Сообщить о сохранении документа (триггер пересчёта контекста чата). */
+  /** Report a document save (triggers chat-context recomputation). */
   bumpDocVersion: () => void
-  /** Открыть сведённый просмотр (всё/папка одной страницей). */
+  /** Open the combined view (everything/one folder as a single page). */
   showCombined: (scope: CombinedScope) => void
-  /** Закрыть сведённый просмотр. */
+  /** Close the combined view. */
   closeCombined: () => void
 }
 
@@ -92,7 +92,7 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
   const applyOpened = useCallback(
     (result: { projectPath: string; manifest: ProjectManifest }) => {
       localStorage.setItem(LAST_PROJECT_KEY, result.projectPath)
-      // Восстановить последнюю открытую главу, если она ещё существует.
+      // Restore the last open chapter if it still exists.
       const lastDoc = localStorage.getItem(lastDocKey(result.projectPath))
       const activeDocId = lastDoc && findNode(result.manifest.tree, lastDoc) ? lastDoc : null
       setState((s) => ({
@@ -104,13 +104,13 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
         docVersion: s.docVersion + 1,
         combinedScope: null
       }))
-      // Снапшот при открытии (main решает по настройкам).
+      // Snapshot on open (main decides based on settings).
       void window.api.backup.projectOpened(result.projectPath).catch(() => undefined)
     },
     []
   )
 
-  // Восстановление последнего проекта при запуске.
+  // Restore the last project on startup.
   useEffect(() => {
     const lastPath = localStorage.getItem(LAST_PROJECT_KEY)
     if (!lastPath) return
@@ -122,7 +122,7 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
         if (!cancelled) applyOpened(result)
       })
       .catch(() => {
-        // Проект мог быть перемещён/удалён — забываем его.
+        // The project may have been moved/deleted — forget it.
         localStorage.removeItem(LAST_PROJECT_KEY)
         if (!cancelled) setState((s) => ({ ...s, busy: false }))
       })
@@ -165,7 +165,7 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
     [applyOpened]
   )
 
-  // Открытие проекта по запросу ОС (ассоциация .bookproj / аргумент запуска).
+  // Open a project on OS request (.bookproj association / launch argument).
   useEffect(
     () => window.api.app.onOpenProject((path) => void openProjectByPath(path)),
     [openProjectByPath]
@@ -182,9 +182,9 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
     const path = stateRef.current.projectPath
     if (!path) return
     try {
-      // Сбрасываем активный документ и дописываем отложенные автосохранения
-      // ДО восстановления — иначе debounce-таймер редактора может сработать
-      // после замены файлов и перезаписать восстановленное старым содержимым.
+      // Reset the active document and flush pending autosaves BEFORE the
+      // restore — otherwise the editor's debounce timer could fire after the
+      // files are replaced and overwrite the restored state with old content.
       setState((s) => ({ ...s, activeDocId: null }))
       await flushAll()
       const manifest = await window.api.backup.restore(path, id)
@@ -197,7 +197,7 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
   const selectDocument = useCallback((nodeId: string) => {
     const path = stateRef.current.projectPath
     if (path) localStorage.setItem(lastDocKey(path), nodeId)
-    // Выбор документа выходит из сведённого просмотра.
+    // Selecting a document exits the combined view.
     setState((s) => ({ ...s, activeDocId: nodeId, combinedScope: null }))
   }, [])
 
@@ -269,7 +269,7 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
     }
   }, [])
 
-  // Активный документ мог попасть в корзину — сбрасываем, если его больше нет в дереве.
+  // The active document may be in the trash now — reset it if it left the tree.
   const applyTreeManifest = useCallback((manifest: ProjectManifest): void => {
     setState((s) => {
       const activeStillExists = s.activeDocId
@@ -407,7 +407,7 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
 export function useProject(): ProjectContextValue {
   const ctx = useContext(ProjectContext)
   if (!ctx) {
-    throw new Error('useProject должен использоваться внутри <ProjectProvider>')
+    throw new Error('useProject must be used inside <ProjectProvider>')
   }
   return ctx
 }

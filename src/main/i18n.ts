@@ -1,7 +1,7 @@
 /**
- * Локализация main-процесса (меню, диалоги, ошибки).
- * Язык кэшируется из настроек: setMainLanguage() вызывает сервис настроек
- * при каждом чтении/записи settings.json.
+ * Main-process localization (menus, dialogs, errors).
+ * The language is cached from settings: the settings service calls
+ * setMainLanguage() on every read/write of settings.json.
  */
 
 import type { UiLanguage } from '@shared/settings-types'

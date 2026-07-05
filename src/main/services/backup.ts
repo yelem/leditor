@@ -1,10 +1,10 @@
 /**
- * Сервис резервного копирования.
+ * Backup service.
  *
- * Снапшот — полная копия project.json + content/ (+ notes/) в backups/<id>/,
- * где id — сортируемая метка времени. Хранится meta.json с временем и причиной.
- * Ротация ограничивает число копий. Восстановление перед перезаписью делает
- * защитный снапшот текущего состояния (pre-restore).
+ * A snapshot is a full copy of project.json + content/ (+ notes/) placed in
+ * backups/<id>/, where id is a sortable timestamp. meta.json stores the time
+ * and reason. Rotation caps the number of copies. Restoring first takes a
+ * protective snapshot of the current state (pre-restore).
  */
 
 import { promises as fs } from 'node:fs'
@@ -24,9 +24,9 @@ import { atomicWriteJson, readManifest } from './storage'
 import { tMain } from '../i18n'
 
 /**
- * Папка снапшотов проекта. Пустой customLocation — внутри проекта (backups/).
- * Иначе — <customLocation>/<имя проекта>-<хеш полного пути> (чтобы разные
- * проекты с одинаковым именем не смешивались).
+ * The project's snapshots folder. Empty customLocation — inside the project
+ * (backups/). Otherwise — <customLocation>/<project name>-<full-path hash>
+ * (so different projects with the same name do not mix).
  */
 function backupsDir(projectPath: string, customLocation: string): string {
   if (!customLocation) return join(projectPath, BACKUPS_DIRNAME)
@@ -50,7 +50,7 @@ async function pathExists(target: string): Promise<boolean> {
   }
 }
 
-/** Сортируемая метка времени для имени папки: 20260624-163012-345. */
+/** Sortable timestamp for the folder name: 20260624-163012-345. */
 function timestampId(date: Date): string {
   const p = (n: number, w = 2): string => String(n).padStart(w, '0')
   return (
@@ -66,7 +66,7 @@ interface SnapshotMeta {
   documentCount: number
 }
 
-/** Создать снапшот проекта и применить ротацию. Возвращает описание копии. */
+/** Create a project snapshot and apply rotation. Returns the snapshot info. */
 export async function createSnapshot(
   projectPath: string,
   reason: BackupReason,
@@ -75,7 +75,7 @@ export async function createSnapshot(
 ): Promise<BackupInfo> {
   const now = new Date()
   let id = timestampId(now)
-  // Гарантируем уникальность имени папки.
+  // Guarantee folder-name uniqueness.
   let dir = snapshotDir(projectPath, id, customLocation)
   let suffix = 0
   while (await pathExists(dir)) {
@@ -86,7 +86,7 @@ export async function createSnapshot(
 
   await fs.mkdir(dir, { recursive: true })
 
-  // Копируем манифест и содержимое (backups/ в снапшот не входит).
+  // Copy the manifest and contents (backups/ itself is not included).
   const manifest = await readManifest(projectPath)
   await fs.copyFile(join(projectPath, MANIFEST_FILENAME), join(dir, MANIFEST_FILENAME))
 
@@ -108,7 +108,7 @@ export async function createSnapshot(
   return { id, createdAt: meta.createdAt, reason, documentCount }
 }
 
-/** Список снапшотов, отсортированный от новых к старым. */
+/** List of snapshots, newest first. */
 export async function listSnapshots(
   projectPath: string,
   customLocation = ''
@@ -128,9 +128,9 @@ export async function listSnapshots(
     } catch {
       meta = null
     }
-    // meta.json пишется последним — его отсутствие означает, что снапшот
-    // оборван (например, выход по таймауту). Такие не показываем и не
-    // восстанавливаем; мусор подчищает rotate().
+    // meta.json is written last — its absence means the snapshot was cut off
+    // (e.g. quit by timeout). Such snapshots are neither listed nor restorable;
+    // rotate() cleans up the leftovers.
     if (!meta) continue
     infos.push({
       id,
@@ -144,7 +144,7 @@ export async function listSnapshots(
   return infos
 }
 
-/** Удалить лишние снапшоты сверх лимита (самые старые) и мусор от обрыва. */
+/** Delete snapshots over the limit (oldest first) and interrupted leftovers. */
 async function rotate(projectPath: string, maxBackups: number, customLocation: string): Promise<void> {
   const all = await listSnapshots(projectPath, customLocation)
   const excess = all.slice(Math.max(0, maxBackups))
@@ -152,8 +152,8 @@ async function rotate(projectPath: string, maxBackups: number, customLocation: s
     await fs.rm(snapshotDir(projectPath, info.id, customLocation), { recursive: true, force: true })
   }
 
-  // Папки без meta.json — оборванные снапшоты. Удаляем только старше часа:
-  // совсем свежая папка может быть снапшотом, который пишется прямо сейчас.
+  // Folders without meta.json are interrupted snapshots. Delete only those
+  // older than an hour: a very fresh folder may be a snapshot being written now.
   const complete = new Set(all.map((i) => i.id))
   const root = backupsDir(projectPath, customLocation)
   try {
@@ -166,11 +166,11 @@ async function rotate(projectPath: string, maxBackups: number, customLocation: s
       }
     }
   } catch {
-    /* папки бэкапов может не быть — игнорируем */
+    /* the backups folder may not exist — ignore */
   }
 }
 
-/** Удалить один снапшот по id. */
+/** Delete one snapshot by id. */
 export async function deleteSnapshot(
   projectPath: string,
   id: string,
@@ -180,8 +180,8 @@ export async function deleteSnapshot(
 }
 
 /**
- * Восстановить проект из снапшота. Перед перезаписью делает защитный снапшот
- * текущего состояния (pre-restore). Возвращает восстановленный манифест.
+ * Restore the project from a snapshot. Takes a protective snapshot of the
+ * current state (pre-restore) before overwriting. Returns the restored manifest.
  */
 export async function restoreSnapshot(
   projectPath: string,
@@ -190,8 +190,8 @@ export async function restoreSnapshot(
   customLocation = ''
 ): Promise<ProjectManifest> {
   const src = snapshotDir(projectPath, id, customLocation)
-  // meta.json пишется последним — без него снапшот оборван и восстанавливать
-  // его нельзя (молча потерялись бы главы).
+  // meta.json is written last — without it the snapshot is incomplete and
+  // must not be restored (chapters would silently go missing).
   if (
     !(await pathExists(join(src, MANIFEST_FILENAME))) ||
     !(await pathExists(join(src, 'meta.json')))
@@ -199,15 +199,15 @@ export async function restoreSnapshot(
     throw new Error(tMain('main.errSnapshotMissing'))
   }
 
-  // Защитная копия текущего состояния — чтобы восстановление было обратимым.
-  // Без ротации: ротация могла бы удалить сам восстанавливаемый снапшот
-  // (когда он самый старый, а лимит уже достигнут). Ротируем после копирования.
+  // Protective copy of the current state — makes the restore reversible.
+  // Without rotation: rotation could delete the very snapshot being restored
+  // (when it is the oldest and the limit is reached). Rotate after copying.
   await createSnapshot(projectPath, 'pre-restore', Number.POSITIVE_INFINITY, customLocation)
 
-  // Манифест.
+  // Manifest.
   await fs.copyFile(join(src, MANIFEST_FILENAME), join(projectPath, MANIFEST_FILENAME))
 
-  // Содержимое: заменяем целиком.
+  // Contents: replaced wholesale.
   const contentDest = join(projectPath, CONTENT_DIRNAME)
   await fs.rm(contentDest, { recursive: true, force: true })
   const contentSrc = join(src, CONTENT_DIRNAME)
@@ -217,7 +217,7 @@ export async function restoreSnapshot(
     await fs.mkdir(contentDest, { recursive: true })
   }
 
-  // Заметки.
+  // Notes.
   const notesDest = join(projectPath, NOTES_DIRNAME)
   const notesSrc = join(src, NOTES_DIRNAME)
   if (await pathExists(notesSrc)) {
@@ -225,7 +225,7 @@ export async function restoreSnapshot(
     await fs.cp(notesSrc, notesDest, { recursive: true })
   }
 
-  // Отложенная ротация (см. выше): восстановление завершено, лишнее можно удалять.
+  // Deferred rotation (see above): the restore is done, extras can be deleted.
   await rotate(projectPath, maxBackups, customLocation)
 
   return readManifest(projectPath)

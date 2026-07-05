@@ -5,7 +5,7 @@ import { useT } from '@renderer/lib/i18n'
 
 interface AiProfileEditorProps {
   profile: AiProfile
-  /** Сохранить профиль; key=null — ключ не менять, '' — очистить, иначе — новый ключ. */
+  /** Save the profile; key=null — keep the key, '' — clear it, otherwise — the new key. */
   onSave: (profile: AiProfile, key: string | null) => void
   onCancel: () => void
 }

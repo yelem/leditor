@@ -8,13 +8,13 @@ import {
   type ReactNode
 } from 'react'
 
-/** Ограничения ширины боковых панелей (px). */
+/** Side-panel width limits (px). */
 export const PANEL_LIMITS = {
   left: { min: 180, max: 480, default: 280 },
   right: { min: 260, max: 560, default: 360 }
 } as const
 
-/** Раскладка окна (ширины панелей, сворачивание) — хранится локально в браузере. */
+/** Window layout (panel widths, collapsing) — stored locally in the browser. */
 interface UiState {
   leftWidth: number
   rightWidth: number
@@ -23,7 +23,7 @@ interface UiState {
 }
 
 interface UiContextValue extends UiState {
-  /** Распределительный (фокус) режим: только редактор, без панелей и тулбара. */
+  /** Focus mode: editor only, no panels or toolbar. */
   focusMode: boolean
   resizeLeft: (deltaX: number) => void
   resizeRight: (deltaX: number) => void
@@ -74,15 +74,15 @@ const UiContext = createContext<UiContextValue | null>(null)
 
 export function UiProvider({ children }: { children: ReactNode }): JSX.Element {
   const [state, setState] = useState<UiState>(loadState)
-  // Фокус-режим не сохраняется между запусками (всегда стартуем выключенным).
+  // Focus mode is not persisted between launches (always starts off).
   const [focusMode, setFocusMode] = useState(false)
 
-  // Сохраняем раскладку между запусками.
+  // Persist the layout between launches.
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     } catch {
-      /* localStorage недоступен — игнорируем */
+      /* localStorage unavailable — ignore */
     }
   }, [state])
 
@@ -94,7 +94,7 @@ export function UiProvider({ children }: { children: ReactNode }): JSX.Element {
   }, [])
 
   const resizeRight = useCallback((deltaX: number) => {
-    // Правый разделитель: движение влево расширяет панель.
+    // Right divider: moving left widens the panel.
     setState((s) => ({
       ...s,
       rightWidth: clamp(s.rightWidth - deltaX, PANEL_LIMITS.right.min, PANEL_LIMITS.right.max)
@@ -132,7 +132,7 @@ export function UiProvider({ children }: { children: ReactNode }): JSX.Element {
 export function useUi(): UiContextValue {
   const ctx = useContext(UiContext)
   if (!ctx) {
-    throw new Error('useUi должен использоваться внутри <UiProvider>')
+    throw new Error('useUi must be used inside <UiProvider>')
   }
   return ctx
 }

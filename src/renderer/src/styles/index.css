@@ -1,5 +1,5 @@
 /* ============================================================
-   Глобальные токены, темы и базовые стили
+   Global tokens, themes and base styles
    ============================================================ */
 
 :root,
@@ -18,7 +18,7 @@
   --accent-hover: #946531;
   --accent-contrast: #ffffff;
   --shadow: 0 1px 3px rgba(40, 32, 18, 0.08);
-  /* Фон вокруг «бумаги» редактора — глубже основного. */
+  /* Background around the editor page — deeper than the base. */
   --editor-bg: #e7e3d8;
 }
 
@@ -57,7 +57,7 @@ body {
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
-  /* Интерфейс не выделяется — только текстовые области (ниже). */
+  /* The UI is not selectable — only text areas are (below). */
   user-select: none;
 }
 
@@ -71,7 +71,7 @@ textarea,
   user-select: text;
 }
 
-/* Во время перетаскивания разделителя — единый курсор, без выделения текста. */
+/* While dragging a divider — a single cursor, no text selection. */
 body.is-resizing {
   cursor: col-resize;
   user-select: none;
@@ -87,7 +87,7 @@ button:disabled {
   opacity: 0.55;
 }
 
-/* Тонкие скроллбары в духе тёмной/светлой темы. */
+/* Thin scrollbars matching the dark/light theme. */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;

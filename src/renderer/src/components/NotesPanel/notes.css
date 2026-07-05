@@ -38,7 +38,7 @@
   margin-left: 8px;
 }
 
-/* Панель форматирования заметок. */
+/* Notes formatting toolbar. */
 .notes__toolbar {
   display: flex;
   align-items: center;
@@ -81,7 +81,7 @@
   background: var(--border);
 }
 
-/* Поле редактирования заметок. */
+/* Notes editing area. */
 .notes__editor {
   flex: 1;
   overflow-y: auto;
@@ -128,7 +128,7 @@
   font-size: 14px;
 }
 
-/* Подсказка-заполнитель (TipTap Placeholder). */
+/* Placeholder hint (TipTap Placeholder). */
 .notes__prose p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;

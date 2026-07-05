@@ -1,9 +1,9 @@
 /**
- * Глобальные настройки приложения (хранятся в app.getPath('userData')/settings.json).
+ * Global application settings (stored in app.getPath('userData')/settings.json).
  *
- * Отделены от настроек конкретного проекта (ProjectSettings в project.json):
- * глобальные `defaults` лишь задают стартовые значения поля для НОВЫХ проектов,
- * после чего каждый проект хранит и меняет свои настройки независимо.
+ * Separate from per-project settings (ProjectSettings in project.json):
+ * global `defaults` only seed the writing area of NEW projects, after which
+ * every project keeps and changes its own settings independently.
  */
 
 import { type ProjectSettings, DEFAULT_PROJECT_SETTINGS } from './project-types'
@@ -13,37 +13,37 @@ export const SETTINGS_SCHEMA_VERSION = 1
 
 export type Theme = 'light' | 'dark'
 
-/** Язык интерфейса. */
+/** Interface language. */
 export type UiLanguage = 'en' | 'uk' | 'ru'
 
 export const UI_LANGUAGES: UiLanguage[] = ['en', 'uk', 'ru']
 
-/** Стиль умных кавычек: выключено / «ёлочки» / „лапки“. */
+/** Smart-quote style: off / «guillemets» / „German“. */
 export type QuoteStyle = 'off' | 'guillemets' | 'german'
 
-/** Умная типографика при наборе. */
+/** Smart typography while typing. */
 export interface TypographySettings {
-  /** Автозамена прямых кавычек на типографские выбранного стиля. */
+  /** Replace straight quotes with typographic ones of the chosen style. */
   quotes: QuoteStyle
-  /** «--» → «—» (длинное тире). */
+  /** "--" → "—" (em dash). */
   dashes: boolean
-  /** «...» → «…» (многоточие). */
+  /** "..." → "…" (ellipsis). */
   ellipsis: boolean
 }
 
-/** Параметры резервного копирования. */
+/** Backup parameters. */
 export interface BackupSettings {
-  /** Интервал автоснапшота в минутах (0 — выключено). */
+  /** Auto-snapshot interval in minutes (0 — off). */
   intervalMinutes: number
-  /** Максимум хранимых копий (ротация). */
+  /** Maximum snapshots to keep (rotation). */
   maxBackups: number
-  /** Делать снапшот при открытии проекта. */
+  /** Snapshot when a project is opened. */
   onOpen: boolean
-  /** Делать снапшот при закрытии проекта. */
+  /** Snapshot when a project is closed. */
   onClose: boolean
   /**
-   * Папка для снапшотов. Пустая строка — внутри проекта (backups/).
-   * Иначе снапшоты проекта кладутся в <customLocation>/<имя>-<хеш пути>.
+   * Snapshot folder. Empty string — inside the project (backups/).
+   * Otherwise snapshots go to <customLocation>/<name>-<path hash>.
    */
   customLocation: string
 }
@@ -51,16 +51,16 @@ export interface BackupSettings {
 export interface GlobalSettings {
   schemaVersion: number
   theme: Theme
-  /** Язык интерфейса (по умолчанию английский). */
+  /** Interface language (English by default). */
   language: UiLanguage
-  /** Значения поля письма по умолчанию для новых проектов. */
+  /** Default writing-area values for new projects. */
   defaults: ProjectSettings
-  /** Задержка debounce-автосохранения текста, мс. */
+  /** Debounced text autosave delay, ms. */
   autosaveDelayMs: number
-  /** Умная типографика при наборе. */
+  /** Smart typography while typing. */
   typography: TypographySettings
   backup: BackupSettings
-  /** Профили ИИ-провайдеров (без ключей; ключи — в safeStorage). */
+  /** AI provider profiles (no keys; keys live in safeStorage). */
   ai: AiSettings
 }
 

@@ -5,7 +5,7 @@ interface ResizerProps {
   ariaLabel: string
 }
 
-/** Вертикальный разделитель-перетаскиватель между панелями. */
+/** Vertical draggable divider between panels. */
 export function Resizer({ onResize, ariaLabel }: ResizerProps): JSX.Element {
   const startDrag = useDrag(onResize)
 

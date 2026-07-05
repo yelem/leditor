@@ -10,7 +10,7 @@ interface SuggestionsReviewProps {
   onGoto: (sid: string) => void
 }
 
-/** Панель обзора предложенных правок (принять/отклонить по одной и все сразу). */
+/** Review panel for suggested edits (accept/reject one by one or all at once). */
 export function SuggestionsReview({
   items,
   onAccept,

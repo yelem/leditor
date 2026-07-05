@@ -10,7 +10,7 @@ interface AppearancePopoverProps {
   onClose: () => void
 }
 
-/** Поповер настроек поля письма (применяется к текущему проекту). */
+/** Writing-area settings popover (applies to the current project). */
 export function AppearancePopover({
   settings,
   onChange,

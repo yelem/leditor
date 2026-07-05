@@ -1,5 +1,5 @@
 /**
- * IPC экспорта проекта в Word/FB2/EPUB.
+ * Project export IPC (Word/FB2/EPUB).
  */
 
 import { ipcMain } from 'electron'

@@ -1,9 +1,9 @@
 /**
- * Слой хранения проекта на диске.
+ * On-disk project storage layer.
  *
- * Проект — это папка `*.bookproj`. Все записи атомарны:
- * данные пишутся во временный файл и переименовываются поверх целевого, чтобы
- * сбой посреди записи не повредил существующий файл.
+ * A project is a `*.bookproj` folder. All writes are atomic: data goes to a
+ * temp file which is then renamed over the target, so a crash mid-write
+ * cannot corrupt the existing file.
  */
 
 import { randomUUID } from 'node:crypto'
@@ -22,14 +22,14 @@ import {
 import { collectDocumentIds } from '../domain/project-model'
 import { tMain } from '../i18n'
 
-/** Атомарная запись JSON: temp-файл в той же папке + переименование поверх цели. */
+/** Atomic JSON write: temp file in the same folder + rename over the target. */
 export async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
   const dir = dirname(filePath)
   await fs.mkdir(dir, { recursive: true })
   const tmpPath = join(dir, `.${basename(filePath)}.${randomUUID()}.tmp`)
   try {
-    // fsync перед rename: без него при сбое питания переименование может
-    // пережить перезагрузку, а данные — нет (остался бы пустой файл).
+    // fsync before rename: without it, after a power failure the rename may
+    // survive the reboot while the data does not (leaving an empty file).
     const handle = await fs.open(tmpPath, 'w')
     try {
       await handle.writeFile(JSON.stringify(data, null, 2), 'utf8')
@@ -37,7 +37,7 @@ export async function atomicWriteJson(filePath: string, data: unknown): Promise<
     } finally {
       await handle.close()
     }
-    // fs.rename на Windows и POSIX заменяет существующий файл атомарно.
+    // fs.rename replaces an existing file atomically on Windows and POSIX.
     await fs.rename(tmpPath, filePath)
   } catch (error) {
     await fs.rm(tmpPath, { force: true }).catch(() => undefined)
@@ -46,9 +46,9 @@ export async function atomicWriteJson(filePath: string, data: unknown): Promise<
 }
 
 /**
- * Идентификатор узла, безопасный для имени файла. Узлы создаются через
- * randomUUID, но id приходит из renderer — проверяем формат, чтобы исключить
- * выход за пределы папки проекта (../, слэши, точки).
+ * Node id that is safe to use as a file name. Nodes are created with
+ * randomUUID, but the id arrives from the renderer — validate the format to
+ * rule out escaping the project folder (../, slashes, dots).
  */
 function safeNodeId(nodeId: string): string {
   if (!/^[A-Za-z0-9-]{1,64}$/.test(nodeId)) {
@@ -77,8 +77,8 @@ const documentPath = (projectPath: string, nodeId: string): string =>
   join(contentDir(projectPath), `${safeNodeId(nodeId)}.json`)
 
 /**
- * Создать новый проект на диске: структура папок, манифест и пустые файлы
- * содержимого для всех узлов-документов из стартового дерева.
+ * Create a new project on disk: folder structure, manifest, and empty content
+ * files for every document node of the starter tree.
  */
 export async function createProject(
   projectPath: string,
@@ -95,7 +95,7 @@ export async function createProject(
   }
 }
 
-/** Прочитать и провалидировать манифест проекта. */
+/** Read and validate the project manifest. */
 export async function readManifest(projectPath: string): Promise<ProjectManifest> {
   const file = manifestPath(projectPath)
   if (!(await pathExists(file))) {
@@ -113,7 +113,7 @@ export async function readManifest(projectPath: string): Promise<ProjectManifest
   if (!Array.isArray(manifest.tree)) {
     throw new Error(tMain('main.errCorruptTree'))
   }
-  // У старых проектов поля корзины может не быть.
+  // Older projects may lack the trash field.
   if (!Array.isArray(manifest.trash)) {
     manifest.trash = []
   }
@@ -121,7 +121,7 @@ export async function readManifest(projectPath: string): Promise<ProjectManifest
   return manifest
 }
 
-/** Записать манифест, обновив отметку времени изменения. */
+/** Write the manifest, refreshing the modification timestamp. */
 export async function writeManifest(
   projectPath: string,
   manifest: ProjectManifest
@@ -131,7 +131,7 @@ export async function writeManifest(
   return updated
 }
 
-/** Прочитать содержимое документа. Возвращает null, если файла ещё нет. */
+/** Read document contents. Returns null if the file does not exist yet. */
 export async function readDocument(
   projectPath: string,
   nodeId: string
@@ -141,7 +141,7 @@ export async function readDocument(
   return readJson<DocumentContent>(file)
 }
 
-/** Записать содержимое документа атомарно. */
+/** Write document contents atomically. */
 export async function writeDocument(
   projectPath: string,
   nodeId: string,
@@ -150,17 +150,17 @@ export async function writeDocument(
   await atomicWriteJson(documentPath(projectPath, nodeId), content)
 }
 
-/** Удалить файл содержимого документа (например, при удалении узла). */
+/** Delete a document's content file (e.g. when the node is removed). */
 export async function deleteDocument(projectPath: string, nodeId: string): Promise<void> {
   await fs.rm(documentPath(projectPath, nodeId), { force: true })
 }
 
-// --- Заметки глав (notes/<id>.json) ---
+// --- Chapter notes (notes/<id>.json) ---
 
 const notePath = (projectPath: string, nodeId: string): string =>
   join(projectPath, NOTES_DIRNAME, `${safeNodeId(nodeId)}.json`)
 
-/** Прочитать заметку главы (или пустую строку). */
+/** Read a chapter note (or an empty string). */
 export async function readNote(projectPath: string, nodeId: string): Promise<string> {
   const file = notePath(projectPath, nodeId)
   if (!(await pathExists(file))) return ''
@@ -172,22 +172,22 @@ export async function readNote(projectPath: string, nodeId: string): Promise<str
   }
 }
 
-/** Записать заметку главы. */
+/** Write a chapter note. */
 export async function writeNote(projectPath: string, nodeId: string, text: string): Promise<void> {
   await atomicWriteJson(notePath(projectPath, nodeId), text)
 }
 
-/** Удалить заметку главы (при удалении узла). */
+/** Delete a chapter note (when the node is removed). */
 export async function deleteNote(projectPath: string, nodeId: string): Promise<void> {
   await fs.rm(notePath(projectPath, nodeId), { force: true })
 }
 
-// --- История чата и кэш кратких содержаний ---
+// --- Chat history and the summaries cache ---
 
 const chatPath = (projectPath: string): string => join(projectPath, 'chat.json')
 const summariesPath = (projectPath: string): string => join(projectPath, 'summaries.json')
 
-/** Прочитать историю чата проекта (или пустую). */
+/** Read the project chat history (or an empty one). */
 export async function readChat(projectPath: string): Promise<unknown[]> {
   const file = chatPath(projectPath)
   if (!(await pathExists(file))) return []
@@ -199,12 +199,12 @@ export async function readChat(projectPath: string): Promise<unknown[]> {
   }
 }
 
-/** Записать историю чата проекта. */
+/** Write the project chat history. */
 export async function writeChat(projectPath: string, messages: unknown[]): Promise<void> {
   await atomicWriteJson(chatPath(projectPath), messages)
 }
 
-/** Прочитать кэш кратких содержаний (docId → текст). */
+/** Read the summaries cache (docId → text). */
 export async function readSummaries(projectPath: string): Promise<Record<string, string>> {
   const file = summariesPath(projectPath)
   if (!(await pathExists(file))) return {}
@@ -216,7 +216,7 @@ export async function readSummaries(projectPath: string): Promise<Record<string,
   }
 }
 
-/** Записать кэш кратких содержаний. */
+/** Write the summaries cache. */
 export async function writeSummaries(
   projectPath: string,
   summaries: Record<string, string>

@@ -1,7 +1,7 @@
 import type { AiProviderKind } from '@shared/ai-types'
 import type { Translator } from '@shared/i18n'
 
-/** Пресеты провайдеров — предзаполняют baseUrl/модель/вид. */
+/** Provider presets — pre-fill baseUrl/model/kind. */
 export interface AiPreset {
   id: string
   label: string
@@ -28,7 +28,7 @@ export const AI_PRESETS: AiPreset[] = [
   { id: 'custom', label: '', kind: 'openai', baseUrl: '', model: '', needsKey: false }
 ]
 
-/** Подпись пресета для списка (локальные и «свой» — локализуются). */
+/** Preset label for the list (local and custom ones are localized). */
 export function presetLabel(p: AiPreset, t: Translator): string {
   if (p.id === 'custom') return t('ai.presetCustom')
   if (!p.needsKey) return `${p.label} (${t('ai.presetLocal')})`

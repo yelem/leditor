@@ -12,8 +12,8 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
   - '!book-editor-spec.md'
-# Ассоциация расширения проекта. На macOS .bookproj — это пакет (папка),
-# поэтому isPackage: true даёт открытие приложения по двойному клику.
+# Project extension association. On macOS a .bookproj is a package (folder),
+# so isPackage: true makes double-click open the app.
 fileAssociations:
   - ext: bookproj
     name: Leditor Project

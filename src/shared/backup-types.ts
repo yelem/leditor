@@ -1,15 +1,15 @@
-/** Типы резервного копирования. */
+/** Backup types. */
 
 export type BackupReason = 'open' | 'close' | 'interval' | 'manual' | 'pre-restore'
 
-/** Описание одного снапшота проекта (папка backups/<id>/). */
+/** One project snapshot (folder backups/<id>/). */
 export interface BackupInfo {
-  /** Имя папки снапшота (сортируемая метка времени). */
+  /** Snapshot folder name (sortable timestamp). */
   id: string
-  /** ISO-время создания. */
+  /** ISO creation time. */
   createdAt: string
-  /** Причина создания. */
+  /** Why the snapshot was created. */
   reason: BackupReason
-  /** Число документов в снапшоте (для краткого просмотра). */
+  /** Number of documents in the snapshot (for quick overview). */
   documentCount: number
 }

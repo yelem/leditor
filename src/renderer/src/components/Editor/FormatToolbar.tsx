@@ -127,7 +127,7 @@ export function FormatToolbar({
 
       <span className="fmt__sep" />
 
-      {/* Выбор стиля абзаца */}
+      {/* Paragraph style picker */}
       <div className="fmt__dropdown" ref={styleRef}>
         <button
           ref={toggleRef}

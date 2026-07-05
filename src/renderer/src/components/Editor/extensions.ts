@@ -17,7 +17,7 @@ import { InsertionMark, DeletionMark } from './suggestion-marks'
 import { SearchHighlight } from './search-extension'
 import { SmartTypography } from './typography'
 
-// Разрыв сцены без авто-замены при вводе «***»/«---» (только по кнопке тулбара).
+// Scene break without auto-replacement on typing "***"/"---" (toolbar button only).
 const SceneBreak = HorizontalRule.extend({
   addInputRules() {
     return []
@@ -25,15 +25,15 @@ const SceneBreak = HorizontalRule.extend({
 })
 
 /**
- * Набор расширений редактора — функционально повторяет «Simple editor» TipTap:
- * форматирование, выравнивание, выделение, ссылки, индексы, задачи, табуляция.
+ * Editor extension set: formatting, alignment, highlight, links,
+ * super/subscript, task lists, tab handling.
  */
 export const editorExtensions: Extensions = [
   StarterKit.configure({
     heading: { levels: [1, 2, 3] },
     horizontalRule: false,
-    // Меньшая задержка группировки правок: каждая пауза при наборе образует
-    // отдельный шаг отмены, чтобы Ctrl+Z не откатывал сразу целый абзац.
+    // Smaller edit-grouping delay: every typing pause starts a separate undo
+    // step, so Ctrl+Z does not roll back a whole paragraph at once.
     history: { newGroupDelay: 200 }
   }),
   SceneBreak,

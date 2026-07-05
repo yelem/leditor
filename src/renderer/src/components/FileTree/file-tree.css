@@ -15,7 +15,7 @@
   outline: none;
 }
 
-/* Открытый в редакторе документ, когда выделение стоит на другом узле. */
+/* The document open in the editor while the selection is on another node. */
 .tree__row.is-open {
   box-shadow: inset 2px 0 0 var(--border-strong);
 }
@@ -28,7 +28,7 @@
 }
 
 .tree__root {
-  padding: 6px 0 40px; /* нижний отступ — зона сброса в корень */
+  padding: 6px 0 40px; /* bottom padding — the drop-to-root zone */
   min-height: 100%;
 }
 
@@ -98,7 +98,7 @@
   outline: none;
 }
 
-/* Индикаторы перетаскивания. */
+/* Drag-and-drop indicators. */
 .tree__row.is-drop-before::before,
 .tree__row.is-drop-after::after {
   content: '';
@@ -129,7 +129,7 @@
   line-height: 1.5;
 }
 
-/* Корзина. */
+/* Trash. */
 .trash {
   flex: 0 0 auto;
   border-top: 1px solid var(--border);
@@ -264,7 +264,7 @@
   color: #d05a52;
 }
 
-/* Контекстное меню. */
+/* Context menu. */
 .ctx {
   position: fixed;
   z-index: 1000;

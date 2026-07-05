@@ -11,7 +11,7 @@
   font-size: 14px;
 }
 
-/* --- Панель форматирования --- */
+/* --- Formatting toolbar --- */
 .editor__toolbar-wrap {
   position: relative;
   flex: 0 0 auto;
@@ -76,7 +76,7 @@
   flex: 1 0 12px;
 }
 
-/* Выпадающее меню стиля абзаца. */
+/* Paragraph style dropdown. */
 .fmt__dropdown {
   position: relative;
   flex: 0 0 auto;
@@ -113,7 +113,7 @@
   color: var(--accent);
 }
 
-/* Поповер ссылки. */
+/* Link popover. */
 .fmt__link-backdrop {
   position: fixed;
   inset: 0;
@@ -171,7 +171,7 @@
   color: #c0524a;
 }
 
-/* --- Поповер настроек поля --- */
+/* --- Writing-area settings popover --- */
 .appearance {
   position: absolute;
   right: 10px;
@@ -219,12 +219,12 @@
   cursor: pointer;
 }
 
-/* --- Область письма --- */
+/* --- Writing area --- */
 .editor__scroll {
   flex: 1;
   overflow-y: auto;
   padding: 32px 24px 64px;
-  /* Фон вокруг «бумаги» — чуть глубже основного. */
+  /* Background around the page — slightly deeper than the base. */
   background: var(--editor-bg);
 }
 
@@ -240,7 +240,7 @@
   font-size: 14px;
 }
 
-/* «Лист бумаги»: ширина текста = editorWidth (content-box), плюс поля и тень. */
+/* The paper sheet: text width = editorWidth (content-box), plus padding and shadow. */
 .editor__page {
   box-sizing: content-box;
   margin: 0 auto;
@@ -263,10 +263,10 @@
   margin: 0 0 0.8em;
 }
 
-/* Проз-стили ProseMirror. */
+/* ProseMirror prose styles. */
 .editor__prose {
   outline: none;
-  /* Сохраняем табуляцию (Tab) и кратные пробелы. */
+  /* Preserve tabs and runs of spaces. */
   white-space: pre-wrap;
   tab-size: 4;
 }
@@ -361,7 +361,7 @@
   cursor: pointer;
 }
 
-/* Списки задач. */
+/* Task lists. */
 .editor__prose ul[data-type='taskList'] {
   list-style: none;
   padding-left: 0.2em;
@@ -382,7 +382,7 @@
   flex: 1 1 auto;
 }
 
-/* Плейсхолдер пустого документа. */
+/* Empty-document placeholder. */
 .editor__prose p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
@@ -391,7 +391,7 @@
   pointer-events: none;
 }
 
-/* --- Статус-бар --- */
+/* --- Status bar --- */
 .editor__status {
   display: flex;
   align-items: center;
@@ -431,13 +431,13 @@
   text-align: right;
 }
 
-/* В фокус-режиме центрируем колонку и даём воздух. */
+/* In focus mode, center the column and add breathing room. */
 .app--focus .editor__scroll {
   padding-left: 0;
   padding-right: 0;
 }
 
-/* --- Предложенные правки (Google-Docs-стиль) --- */
+/* --- Suggested edits (review mode) --- */
 .editor__prose ins.sg-ins {
   text-decoration: none;
   color: #1f9d52;
@@ -452,7 +452,7 @@
   border-radius: 2px;
 }
 
-/* Подсветка результатов поиска. */
+/* Search result highlighting. */
 .editor__prose .pm-search {
   background: rgba(217, 160, 102, 0.3);
   border-radius: 2px;
@@ -462,7 +462,7 @@
   color: var(--accent-contrast);
 }
 
-/* Панель поиска/замены. */
+/* Find/replace bar. */
 .find {
   flex: 0 0 auto;
   padding: 8px 12px;
@@ -540,7 +540,7 @@
   cursor: pointer;
 }
 
-/* Индикатор обработки ИИ. */
+/* AI processing indicator. */
 .editor__ai-busy {
   position: fixed;
   bottom: 48px;
@@ -570,7 +570,7 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Строка ошибки ИИ-действия. */
+/* AI action error row. */
 .editor__ai-error {
   display: flex;
   align-items: center;
@@ -590,7 +590,7 @@
   font-size: 13px;
 }
 
-/* Панель обзора правок. */
+/* Suggestions review panel. */
 .sg-review {
   flex: 0 0 auto;
   max-height: 30vh;

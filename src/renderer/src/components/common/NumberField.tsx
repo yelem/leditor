@@ -12,10 +12,10 @@ interface NumberFieldProps {
 }
 
 /**
- * Числовое поле с ручным вводом и степпером ▲▼.
- * Ручной ввод применяется по Enter/потере фокуса и НЕ привязан к шагу
- * (шаг — только для кнопок). Значение обрезается в пределах [min, max];
- * некорректный ввод откатывается.
+ * Numeric field with manual input and a ▲▼ stepper.
+ * Manual input is applied on Enter/blur and is NOT snapped to the step
+ * (the step is for the buttons only). The value is clamped to [min, max];
+ * invalid input is rolled back.
  */
 export function NumberField({
   value,

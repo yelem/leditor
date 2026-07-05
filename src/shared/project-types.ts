@@ -1,16 +1,16 @@
 /**
- * Типы доменной модели проекта.
+ * Project domain-model types.
  *
- * Эти типы — единый источник правды для main и renderer. Дерево хранит только
- * структуру и заголовки; тексты лежат отдельными файлами content/<id>.json.
+ * These types are the single source of truth for main and renderer. The tree
+ * stores only structure and titles; texts live in separate content/<id>.json files.
  */
 
 export const SCHEMA_VERSION = 1
 
-/** Расширение папки проекта. */
+/** Project folder extension. */
 export const PROJECT_EXTENSION = '.bookproj'
 
-/** Имена файлов и подпапок внутри папки проекта. */
+/** File and subfolder names inside the project folder. */
 export const MANIFEST_FILENAME = 'project.json'
 export const CONTENT_DIRNAME = 'content'
 export const NOTES_DIRNAME = 'notes'
@@ -18,7 +18,7 @@ export const BACKUPS_DIRNAME = 'backups'
 
 export type NodeType = 'folder' | 'document'
 
-/** Узел дерева проекта (папка или документ). */
+/** Project tree node (folder or document). */
 export interface TreeNode {
   id: string
   type: NodeType
@@ -26,7 +26,7 @@ export interface TreeNode {
   children: TreeNode[]
 }
 
-/** Настройки поля письма, специфичные для проекта. */
+/** Writing-area settings specific to the project. */
 export interface ProjectSettings {
   fontFamily: string
   fontSize: number
@@ -36,36 +36,35 @@ export interface ProjectSettings {
 }
 
 /**
- * Элемент корзины: удалённое поддерево с памятью об исходном месте,
- * чтобы можно было восстановить узел туда, откуда он был удалён.
+ * Trash item: a deleted subtree remembering its original location,
+ * so the node can be restored to where it was deleted from.
  */
 export interface TrashItem {
-  /** Удалённое поддерево целиком (с тем же id, что и до удаления). */
+  /** The whole deleted subtree (same ids as before deletion). */
   node: TreeNode
-  /** Исходный родитель (null — корень) на момент удаления. */
+  /** Original parent at deletion time (null — root). */
   parentId: string | null
-  /** Исходный индекс среди соседей на момент удаления. */
+  /** Original index among siblings at deletion time. */
   index: number
-  /** Когда удалён (ISO). */
+  /** When deleted (ISO). */
   deletedAt: string
 }
 
-/** Манифест проекта — содержимое project.json. */
+/** Project manifest — the contents of project.json. */
 export interface ProjectManifest {
   schemaVersion: number
   title: string
   createdAt: string
   updatedAt: string
   tree: TreeNode[]
-  /** Корзина: удалённые узлы, доступные для восстановления. */
+  /** Trash: deleted nodes available for restoration. */
   trash: TrashItem[]
   settings: ProjectSettings
 }
 
 /**
- * Узел документа TipTap/ProseMirror (минимальная типизация).
- * Полное дерево узлов появляется при интеграции TipTap на этапе 4,
- * но формат хранения фиксируется уже сейчас.
+ * TipTap/ProseMirror document node (minimal typing).
+ * The storage format is fixed here; the full node tree is produced by TipTap.
  */
 export interface ProseMirrorNode {
   type: string
@@ -75,7 +74,7 @@ export interface ProseMirrorNode {
   text?: string
 }
 
-/** Содержимое одного документа — сериализованный ProseMirror-документ. */
+/** Contents of one document — a serialized ProseMirror document. */
 export interface DocumentContent {
   type: 'doc'
   content: ProseMirrorNode[]
@@ -89,18 +88,18 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   typewriterMode: false
 }
 
-/** Пустой документ — один абзац. */
+/** Empty document — a single paragraph. */
 export function createEmptyDocument(): DocumentContent {
   return { type: 'doc', content: [{ type: 'paragraph' }] }
 }
 
-/** Результат открытия/создания проекта, возвращаемый из main в renderer. */
+/** Result of opening/creating a project, returned from main to the renderer. */
 export interface OpenProjectResult {
   projectPath: string
   manifest: ProjectManifest
 }
 
-/** Счётчик слов и символов. */
+/** Word and character counter. */
 export interface ProjectStats {
   words: number
   chars: number

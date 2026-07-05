@@ -1,5 +1,5 @@
 /**
- * IPC-обработчики глобальных настроек (settings:get/set).
+ * Global settings IPC handlers (settings:get/set).
  */
 
 import { ipcMain } from 'electron'

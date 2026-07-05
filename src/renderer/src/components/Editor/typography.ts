@@ -3,18 +3,18 @@ import type { TypographySettings } from '@shared/settings-types'
 import { DEFAULT_TYPOGRAPHY_SETTINGS } from '@shared/settings-types'
 
 /**
- * Умная типографика при наборе:
- *   — прямые кавычки → «ёлочки» или „лапки“ (по настройке);
- *   — «--» → «—» (длинное тире);
- *   — «...» → «…» (многоточие).
+ * Smart typography while typing:
+ *   — straight quotes → «guillemets» or „German“ (per setting);
+ *   — "--" → "—" (em dash);
+ *   — "..." → "…" (ellipsis).
  *
- * Конфигурация живёт в module-level объекте: обработчики input-rule читают
- * его при каждом срабатывании, поэтому смена настроек применяется мгновенно,
- * без пересоздания редактора.
+ * The configuration lives in a module-level object: input-rule handlers read
+ * it on every trigger, so setting changes apply instantly without recreating
+ * the editor.
  */
 const config: TypographySettings = { ...DEFAULT_TYPOGRAPHY_SETTINGS }
 
-/** Обновить активную конфигурацию типографики (из глобальных настроек). */
+/** Update the active typography configuration (from global settings). */
 export function setTypographyConfig(next: TypographySettings): void {
   config.quotes = next.quotes
   config.dashes = next.dashes
@@ -31,12 +31,12 @@ const QUOTE_CLOSE: Record<'guillemets' | 'german', string> = {
 }
 
 /**
- * Вставить типографскую кавычку вместо набранной прямой.
+ * Insert a typographic quote in place of the typed straight one.
  *
- * Важно: набранная кавычка ещё НЕ в документе — input-rule срабатывает до
- * вставки. `range.to` — позиция курсора; вставляем замену ровно туда (пустой
- * диапазон), поэтому предшествующий текст (включая пробел из открывающего
- * правила) не затрагивается. Сама прямая кавычка при этом не печатается.
+ * Important: the typed quote is NOT in the document yet — the input rule fires
+ * before insertion. `range.to` is the caret position; the replacement goes
+ * exactly there (an empty range), so the preceding text (including the space
+ * from the opening rule) is untouched. The straight quote itself never prints.
  */
 function replaceQuote(
   state: import('@tiptap/pm/state').EditorState,
@@ -52,7 +52,7 @@ export const SmartTypography = Extension.create({
 
   addInputRules() {
     return [
-      // Длинное тире: «--» → «—».
+      // Em dash: "--" → "—".
       new InputRule({
         find: /--$/,
         handler: ({ state, range }) => {
@@ -60,7 +60,7 @@ export const SmartTypography = Extension.create({
           state.tr.insertText('—', range.from, range.to)
         }
       }),
-      // Многоточие: «...» → «…».
+      // Ellipsis: "..." → "…".
       new InputRule({
         find: /\.\.\.$/,
         handler: ({ state, range }) => {
@@ -68,12 +68,12 @@ export const SmartTypography = Extension.create({
           state.tr.insertText('…', range.from, range.to)
         }
       }),
-      // Открывающая двойная кавычка: в начале или после пробела/открывающего знака.
+      // Opening double quote: at the start or after a space/opening character.
       new InputRule({
         find: /(?:^|[\s([{<«„“])"$/,
         handler: ({ state, range }) => replaceQuote(state, range, (s) => QUOTE_OPEN[s])
       }),
-      // Закрывающая двойная кавычка: во всех прочих случаях.
+      // Closing double quote: in all other cases.
       new InputRule({
         find: /"$/,
         handler: ({ state, range }) => replaceQuote(state, range, (s) => QUOTE_CLOSE[s])

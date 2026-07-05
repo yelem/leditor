@@ -1,13 +1,13 @@
 import { Extension } from '@tiptap/core'
 
 /**
- * Tab вставляет символ табуляции, Shift+Tab удаляет один таб перед курсором.
- * Внутри списков/задач отдаёт управление штатному поведению (отступ пунктов),
- * возвращая false.
+ * Tab inserts a tab character; Shift+Tab removes one tab before the caret.
+ * Inside lists/tasks it yields to the default behavior (item indentation)
+ * by returning false.
  */
 export const TabIndent = Extension.create({
   name: 'tabIndent',
-  // Выше ListItem/TaskItem, чтобы наш обработчик пробовался первым.
+  // Above ListItem/TaskItem so this handler is tried first.
   priority: 1000,
 
   addKeyboardShortcuts() {
@@ -26,7 +26,7 @@ export const TabIndent = Extension.create({
         if (empty && from > 0 && state.doc.textBetween(from - 1, from) === '\t') {
           return this.editor.commands.deleteRange({ from: from - 1, to: from })
         }
-        // Предотвращаем потерю фокуса (переход по Tab), даже если удалять нечего.
+        // Prevent focus loss (Tab navigation) even when there is nothing to delete.
         return true
       }
     }

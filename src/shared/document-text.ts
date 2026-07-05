@@ -1,8 +1,8 @@
 import type { DocumentContent, ProseMirrorNode, ProjectStats } from './project-types'
 
 /**
- * Извлечение текста и подсчёт слов/символов из ProseMirror-документа.
- * Используется в main для статистики всего проекта и может применяться в renderer.
+ * Text extraction and word/character counting for a ProseMirror document.
+ * Used in main for whole-project stats; usable from the renderer as well.
  */
 
 const BLOCK_TYPES = new Set([
@@ -16,7 +16,7 @@ const BLOCK_TYPES = new Set([
   'horizontalRule'
 ])
 
-/** Извлечь плоский текст документа (блоки разделены переводами строк). */
+/** Extract flat document text (blocks separated by newlines). */
 export function documentToText(content: DocumentContent): string {
   const parts: string[] = []
   const walk = (nodes: ProseMirrorNode[]): void => {
@@ -30,7 +30,7 @@ export function documentToText(content: DocumentContent): string {
   return parts.join('').replace(/\n{3,}/g, '\n\n').trim()
 }
 
-/** Слова и символы одного документа (символы — без учёта разделителей блоков). */
+/** Words and characters of one document (characters exclude block separators). */
 export function countDocument(content: DocumentContent): ProjectStats {
   let chars = 0
   const parts: string[] = []

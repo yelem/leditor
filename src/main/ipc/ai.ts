@@ -1,7 +1,7 @@
 /**
- * IPC-обработчики ИИ. Резолвят активный профиль + ключ, создают
- * провайдера и проксируют вызовы. Стриминг чата идёт через события 'ai:stream'.
- * Ключи берутся из safeStorage и в renderer не передаются.
+ * AI IPC handlers. Resolve the active profile + key, create a provider and
+ * proxy the calls. Chat streaming goes through 'ai:stream' events.
+ * Keys come from safeStorage and are never passed to the renderer.
  */
 
 import { ipcMain } from 'electron'
@@ -24,7 +24,7 @@ import {
 } from '../services/ai-keys'
 import { tMain } from '../i18n'
 
-/** Создать провайдера по активному сохранённому профилю. */
+/** Create a provider from the active saved profile. */
 async function activeProvider(): Promise<AiProvider> {
   const { ai } = await getSettings()
   const profile = ai.profiles.find((p) => p.id === ai.activeProfileId)
@@ -52,16 +52,16 @@ async function draftProvider(draft: AiProfileDraft): Promise<AiProvider> {
   })
 }
 
-// Предельное время одного запроса к модели: зависший сервер не должен
-// оставлять интерфейс в состоянии «обработка…» навсегда. Запас большой —
-// локальные модели генерируют медленно; отменить раньше можно вручную.
+// Time limit for a single model request: a hung server must not leave the UI
+// in a processing state forever. The margin is generous — local models
+// generate slowly; the user can always cancel earlier by hand.
 const REQUEST_TIMEOUT_MS = 600_000
 
 export function registerAiIpc(): void {
-  // Активные запросы (для прерывания пользователем).
+  // Active requests (for user-initiated cancellation).
   const controllers = new Map<string, AbortController>()
 
-  /** Выполнить запрос с поддержкой отмены по requestId и таймаутом. */
+  /** Run a request with requestId-based cancellation and a timeout. */
   const withAbort = async <T>(
     requestId: string,
     run: (signal: AbortSignal) => Promise<T>
@@ -118,7 +118,7 @@ export function registerAiIpc(): void {
         event.sender.send(IpcChannels.aiStream, { type: 'done', requestId })
         return full
       } catch (err) {
-        // Прерывание пользователем — не ошибка: частичный ответ остаётся.
+        // User cancellation is not an error: the partial reply is kept.
         if (controller.signal.aborted) {
           event.sender.send(IpcChannels.aiStream, { type: 'done', requestId })
           return ''

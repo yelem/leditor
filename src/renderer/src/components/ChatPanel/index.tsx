@@ -7,14 +7,14 @@ import { collectDocuments, findNodeTitle } from '@renderer/lib/tree'
 import { useT } from '@renderer/lib/i18n'
 import './chat-panel.css'
 
-// Предохранитель от запредельно больших отправок (обычная глава влезает целиком).
+// Guard against oversized sends (a typical chapter fits entirely).
 const MAX_DOC_CONTEXT = 200000
-// Ограничение отправляемой истории: длинный чат не должен упираться в
-// контекст модели. Храним всё, а модели шлём хвост в пределах бюджета.
+// Cap on the history that is sent: a long chat must not hit the model's
+// context limit. Everything is stored; the model gets the tail within budget.
 const MAX_HISTORY_MESSAGES = 30
 const MAX_HISTORY_CHARS = 120000
 
-/** Хвост истории в пределах бюджета сообщений и символов. */
+/** History tail within the message and character budgets. */
 function trimHistory(history: AiChatMessage[]): AiChatMessage[] {
   const tail: AiChatMessage[] = []
   let chars = 0
@@ -28,15 +28,15 @@ function trimHistory(history: AiChatMessage[]): AiChatMessage[] {
   }
   return tail
 }
-// Базовая роль ассистента. Универсальная: конкретную задачу ставит пользователь
-// в сообщении; модель отвечает по сути и на языке обращения.
+// Base assistant role. Generic on purpose: the concrete task is set by the
+// user's message; the model answers to the point, in the user's language.
 const SYSTEM_PREFIX =
   'You are a writer’s assistant built into a book editor. You help with everything related to the text: plot, characters, world, style, wording, facts, ideas, edits and translations — the specific task is set by the user in their message. Answer to the point and without fluff: only useful content, no needless introductions, repetition or self-description. Reply in the language the user addresses you in. If book context is attached below, rely on it.'
 
 /**
- * Один пузырь сообщения. Мемоизирован: пока печатается новый ответ, завершённые
- * сообщения не перерисовываются — иначе ReactMarkdown заново разбирал бы
- * разметку всей истории на каждый кадр стрима.
+ * One message bubble. Memoized: while a new reply is streaming, completed
+ * messages do not re-render — otherwise ReactMarkdown would re-parse the
+ * whole history's markup on every streamed frame.
  */
 const MessageBubble = memo(function MessageBubble({
   role,
@@ -52,7 +52,7 @@ const MessageBubble = memo(function MessageBubble({
       <div className="chat__bubble">
         {role === 'assistant' ? (
           streaming ? (
-            // Во время стрима — простой текст (без разбора Markdown на каждый кадр).
+            // While streaming — plain text (no Markdown parsing every frame).
             content || '…'
           ) : content ? (
             <div className="chat__md">
@@ -96,9 +96,9 @@ export function ChatPanel(): JSX.Element {
   const pathRef = useRef(projectPath)
   pathRef.current = projectPath
   const listRef = useRef<HTMLDivElement>(null)
-  // Буфер стриминга: накопленные дельты применяем к состоянию не на каждый
-  // токен, а раз в кадр (requestAnimationFrame) — при быстром стриме это
-  // удерживает перерисовку растущего ответа в пределах кадра.
+  // Streaming buffer: accumulated deltas are applied to state once per frame
+  // (requestAnimationFrame), not per token — with a fast stream this keeps
+  // re-rendering of the growing reply within the frame budget.
   const bufferRef = useRef('')
   const rafRef = useRef<number | null>(null)
 
@@ -109,7 +109,7 @@ export function ChatPanel(): JSX.Element {
     [manifest, activeDocId]
   )
 
-  // Загрузка истории и кэша содержаний при открытии проекта.
+  // Load history and the summaries cache when a project opens.
   useEffect(() => {
     if (!projectPath) {
       setMessages([])
@@ -132,7 +132,7 @@ export function ChatPanel(): JSX.Element {
     if (pathRef.current) void window.api.workspace.saveChat(pathRef.current, msgs).catch(() => undefined)
   }, [])
 
-  // Слить накопленные дельты в состояние (вызывается из rAF).
+  // Merge accumulated deltas into state (called from rAF).
   const flushBuffer = useCallback(() => {
     rafRef.current = null
     const chunk = bufferRef.current
@@ -141,7 +141,7 @@ export function ChatPanel(): JSX.Element {
     setMessages((m) => setLastAssistant(m, (prev) => prev + chunk))
   }, [])
 
-  // Сборка контекста для модели.
+  // Build the context for the model.
   const buildContext = useCallback(async (): Promise<string> => {
     if (!projectPath || !manifest) return ''
     const parts: string[] = []
@@ -162,13 +162,13 @@ export function ChatPanel(): JSX.Element {
       if (others.length > 0) parts.push(`[Short summaries of other chapters]\n${others.join('\n')}`)
     }
 
-    // Базовая роль отправляется всегда; контекст книги — если выбран.
+    // The base role is always sent; book context only when selected.
     const context = parts.length > 0 ? `\n\n${parts.join('\n\n')}` : ''
     return `${SYSTEM_PREFIX}${context}`
-    // docVersion — пересчёт после автосохранения главы.
+    // docVersion — recompute after a chapter autosave.
   }, [projectPath, manifest, activeDocId, docTitle, includeDoc, includeSummaries, summaries, docVersion])
 
-  // Оценка размера контекста (для индикатора «что видит модель»).
+  // Estimate the context size (for the what-the-model-sees indicator).
   useEffect(() => {
     let cancelled = false
     buildContext().then((s) => {
@@ -179,7 +179,7 @@ export function ChatPanel(): JSX.Element {
     }
   }, [buildContext])
 
-  // Подписка на стриминг ответа.
+  // Subscribe to reply streaming.
   useEffect(() => {
     const cancelRaf = (): void => {
       if (rafRef.current != null) {
@@ -190,7 +190,7 @@ export function ChatPanel(): JSX.Element {
     return window.api.ai.onStream((e) => {
       if (e.requestId !== reqRef.current) return
       if (e.type === 'delta') {
-        // Копим дельты, экран обновляем раз в кадр.
+        // Accumulate deltas; refresh the screen once per frame.
         bufferRef.current += e.text
         if (rafRef.current == null) rafRef.current = requestAnimationFrame(flushBuffer)
       } else if (e.type === 'done') {
@@ -200,7 +200,7 @@ export function ChatPanel(): JSX.Element {
         if (chunk) setMessages((m) => setLastAssistant(m, (prev) => prev + chunk))
         setStreaming(false)
         reqRef.current = null
-        // messagesRef обновится к следующему тику — тогда и сохраняем.
+        // messagesRef updates by the next tick — save then.
         setTimeout(() => saveChat(messagesRef.current), 0)
       } else if (e.type === 'error') {
         cancelRaf()
@@ -213,7 +213,7 @@ export function ChatPanel(): JSX.Element {
     })
   }, [saveChat, flushBuffer, t])
 
-  // Отмена незавершённого кадра при размонтировании.
+  // Cancel a pending frame on unmount.
   useEffect(
     () => () => {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
@@ -221,7 +221,7 @@ export function ChatPanel(): JSX.Element {
     []
   )
 
-  // Автопрокрутка к низу при новых сообщениях.
+  // Auto-scroll to the bottom on new messages.
   useEffect(() => {
     const el = listRef.current
     if (el) el.scrollTop = el.scrollHeight
@@ -248,7 +248,7 @@ export function ChatPanel(): JSX.Element {
     try {
       await window.api.ai.chat(requestId, toSend)
     } catch {
-      // Ошибка уже пришла событием 'error'.
+      // The error already arrived as an 'error' event.
     }
   }
 
@@ -261,7 +261,7 @@ export function ChatPanel(): JSX.Element {
     saveChat([])
   }
 
-  // Активный запрос генерации содержаний (для остановки).
+  // Active summary-generation request (for stopping).
   const genReqRef = useRef<string | null>(null)
 
   const generateSummaries = async (): Promise<void> => {
@@ -270,7 +270,7 @@ export function ChatPanel(): JSX.Element {
     const next = { ...summaries }
     try {
       for (const d of collectDocuments(manifest.tree)) {
-        // Пользователь нажал «Стоп» — прекращаем обход глав.
+        // The user pressed Stop — stop iterating chapters.
         if (genReqRef.current === 'stopped') break
         const doc = await window.api.document.load(projectPath, d.id)
         if (!doc) continue
@@ -290,7 +290,7 @@ export function ChatPanel(): JSX.Element {
           setSummaries({ ...next })
           await window.api.workspace.saveSummaries(projectPath, next)
         } catch {
-          /* пропускаем главу при ошибке; при остановке цикл прервётся выше */
+          /* skip the chapter on error; on stop the loop breaks above */
         }
       }
     } finally {
@@ -307,7 +307,7 @@ export function ChatPanel(): JSX.Element {
 
   return (
     <div className="chat">
-      {/* Управление контекстом — что видит модель */}
+      {/* Context controls — what the model sees */}
       <div className="chat__context">
         <div className="chat__context-head">
           <span className="chat__context-title">{t('chat.contextTitle')}</span>

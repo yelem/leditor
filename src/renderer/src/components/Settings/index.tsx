@@ -19,7 +19,7 @@ const TABS: Array<{ id: TabId; labelKey: TranslationKey }> = [
   { id: 'spell', labelKey: 'settings.tabSpell' }
 ]
 
-/** Экран глобальных настроек приложения (хранятся в userData). */
+/** Global application settings screen (stored in userData). */
 export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Element {
   const t = useT()
   const { settings, patch } = useSettings()

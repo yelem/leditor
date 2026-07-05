@@ -1,5 +1,5 @@
-// Генерация иконок приложения (PNG + ICO + ICNS) без внешних ассетов.
-// Рисуем «лист книги» в тёплой палитре программы. Запуск: node scripts/make-icons.mjs
+// Application icon generation (PNG + ICO + ICNS) with no external assets.
+// Draws the app mark in the warm app palette. Run: node scripts/make-icons.mjs
 import { writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,12 +9,12 @@ import png2icons from 'png2icons'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SIZE = 1024
 
-// --- Рисование в RGBA-буфер ---
-const rgba = Buffer.alloc(SIZE * SIZE * 4) // прозрачный фон
+// --- Drawing into an RGBA buffer ---
+const rgba = Buffer.alloc(SIZE * SIZE * 4) // transparent background
 const set = (x, y, r, g, b, a = 255) => {
   if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return
   const i = (y * SIZE + x) * 4
-  // простое наложение поверх
+  // simple overlay compositing
   const ia = a / 255
   rgba[i] = Math.round(r * ia + rgba[i] * (1 - ia))
   rgba[i + 1] = Math.round(g * ia + rgba[i + 1] * (1 - ia))
@@ -37,7 +37,7 @@ const fillEllipse = (cx, cy, rx, ry, [r0, g0, b0], a = 255) => {
   }
 }
 
-// Фон-плитка (акцент программы, тёплый коричневый, с лёгким верт. градиентом).
+// Tile background (the app accent, warm brown, with a subtle vertical gradient).
 for (let y = 0; y < SIZE; y++) {
   const t = y / SIZE
   const r = Math.round(186 - 26 * t)
@@ -48,15 +48,15 @@ for (let y = 0; y < SIZE; y++) {
   }
 }
 
-// Кошачья лапка: крупная подушечка + 4 пальчика, кремовым цветом.
+// Cat paw: a large pad + 4 toes, in cream.
 const paw = [249, 245, 238]
-fillEllipse(512, 672, 238, 196, paw) // основная подушечка
-fillEllipse(322, 452, 86, 108, paw) // пальчик 1
-fillEllipse(444, 360, 92, 118, paw) // пальчик 2
-fillEllipse(580, 360, 92, 118, paw) // пальчик 3
-fillEllipse(702, 452, 86, 108, paw) // пальчик 4
+fillEllipse(512, 672, 238, 196, paw) // main pad
+fillEllipse(322, 452, 86, 108, paw) // toe 1
+fillEllipse(444, 360, 92, 118, paw) // toe 2
+fillEllipse(580, 360, 92, 118, paw) // toe 3
+fillEllipse(702, 452, 86, 108, paw) // toe 4
 
-// --- Кодирование PNG (RGBA, 8 бит) ---
+// --- PNG encoding (RGBA, 8-bit) ---
 const crcTable = (() => {
   const t = new Uint32Array(256)
   for (let n = 0; n < 256; n++) {
@@ -100,4 +100,4 @@ const png = Buffer.concat([
 writeFileSync(join(root, 'resources', 'icon.png'), png)
 writeFileSync(join(root, 'resources', 'icon.ico'), png2icons.createICO(png, png2icons.BICUBIC, 0, false, true))
 writeFileSync(join(root, 'resources', 'icon.icns'), png2icons.createICNS(png, png2icons.BICUBIC, 0))
-console.log('Иконки готовы: resources/icon.{png,ico,icns}')
+console.log('Icons ready: resources/icon.{png,ico,icns}')

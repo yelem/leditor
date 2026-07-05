@@ -1,12 +1,12 @@
 /**
- * Абстракция над нейросетью. Все вызовы — только в main.
+ * Abstraction over the language model. All calls happen in main only.
  *
- * Единый интерфейс AiProvider с двумя реализациями:
- *  - AnthropicProvider     — Claude через @anthropic-ai/sdk;
- *  - OpenAICompatProvider  — любой OpenAI-совместимый эндпоинт (fetch + SSE).
+ * A single AiProvider interface with two implementations:
+ *  - AnthropicProvider     — Claude via @anthropic-ai/sdk;
+ *  - OpenAICompatProvider  — any OpenAI-compatible endpoint (fetch + SSE).
  *
- * improveText / checkGrammar / testConnection реализованы в базовом классе
- * поверх chat(), поэтому одинаковы для всех провайдеров.
+ * improveText / checkGrammar / testConnection are implemented in the base
+ * class on top of chat(), so they are identical for all providers.
  */
 
 import Anthropic from '@anthropic-ai/sdk'
@@ -33,7 +33,7 @@ export interface AiProvider {
   listModels: () => Promise<AiModelInfo[]>
 }
 
-/** Убрать «шум» вокруг JSON: блоки размышлений reasoning-моделей и ``` -ограждения. */
+/** Strip noise around JSON: reasoning-model think blocks and ``` fences. */
 function stripNoise(raw: string): string {
   return raw
     .replace(/<think>[\s\S]*?<\/think>/gi, '')
@@ -43,9 +43,9 @@ function stripNoise(raw: string): string {
 }
 
 /**
- * Найти ВСЕ сбалансированные JSON-массивы в тексте, корректно пропуская скобки
- * внутри строковых литералов. Перебор всех кандидатов нужен, потому что у
- * reasoning-моделей до настоящего массива встречаются скобки в рассуждениях.
+ * Find ALL balanced JSON arrays in the text, correctly skipping brackets
+ * inside string literals. All candidates must be tried because reasoning
+ * models emit brackets in their deliberations before the real array.
  */
 function extractJsonArrays(text: string): string[] {
   const out: string[] = []
@@ -93,7 +93,7 @@ function toEdits(parsed: unknown): GrammarEdit[] {
     }))
 }
 
-/** Извлечь JSON-массив правок из ответа модели (терпимо к обрамляющему тексту). */
+/** Extract the JSON array of edits from the model reply (tolerant of surrounding text). */
 function parseGrammar(raw: string): GrammarEdit[] {
   const tryParse = (s: string): unknown => {
     try {
@@ -102,7 +102,7 @@ function parseGrammar(raw: string): GrammarEdit[] {
       return undefined
     }
   }
-  // Из всех сбалансированных массивов берём тот, что даёт больше валидных правок.
+  // Of all balanced arrays, take the one that yields the most valid edits.
   let best: GrammarEdit[] = []
   for (const candidate of extractJsonArrays(stripNoise(raw))) {
     const parsed = tryParse(candidate) ?? tryParse(candidate.replace(/,\s*([\]}])/g, '$1'))
@@ -165,7 +165,7 @@ abstract class BaseProvider implements AiProvider {
   }
 }
 
-/** Провайдер Claude поверх официального SDK. */
+/** Claude provider on top of the official SDK. */
 class AnthropicProvider extends BaseProvider {
   constructor(
     private readonly apiKey: string,
@@ -210,7 +210,7 @@ class AnthropicProvider extends BaseProvider {
   }
 }
 
-/** Провайдер для любого OpenAI-совместимого API (LM Studio, Ollama, OpenAI, …). */
+/** Provider for any OpenAI-compatible API (LM Studio, Ollama, OpenAI, …). */
 class OpenAICompatProvider extends BaseProvider {
   constructor(
     private readonly baseUrl: string,
@@ -245,18 +245,18 @@ class OpenAICompatProvider extends BaseProvider {
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       stream: true
     }
-    // max_tokens шлём только если он задан явно (улучшение/грамматика);
-    // для чата не ограничиваем — сервер сам решит по контексту модели.
+    // Send max_tokens only when set explicitly (improve/grammar);
+    // chat is unlimited — the server decides based on the model context.
     if (opts?.maxTokens != null) body.max_tokens = opts.maxTokens
 
     let res = await this.post(body, opts?.signal)
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '')
-      // Новые модели OpenAI (gpt-5.x, o-серия) не принимают max_tokens —
-      // требуют max_completion_tokens. Локальные серверы (LM Studio, Ollama)
-      // понимают только max_tokens, поэтому шлём его первым, а при отказе
-      // повторяем запрос с новым именем параметра.
+      // Newer OpenAI models (gpt-5.x, o-series) reject max_tokens and require
+      // max_completion_tokens. Local servers (LM Studio, Ollama) only understand
+      // max_tokens, so it is sent first and the request is retried with the new
+      // parameter name on refusal.
       const wantsNewParam =
         res.status === 400 &&
         body.max_tokens != null &&
@@ -306,7 +306,7 @@ class OpenAICompatProvider extends BaseProvider {
             opts?.onDelta?.(delta)
           }
         } catch {
-          /* пропускаем не-JSON строки (комментарии SSE) */
+          /* skip non-JSON lines (SSE comments) */
         }
       }
     }
@@ -323,7 +323,7 @@ class OpenAICompatProvider extends BaseProvider {
   }
 }
 
-/** Создать провайдера по виду и параметрам. */
+/** Create a provider from its kind and parameters. */
 export function createProvider(
   kind: AiProviderKind,
   params: { apiKey: string; baseUrl: string; model: string }

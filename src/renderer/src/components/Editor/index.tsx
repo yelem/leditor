@@ -39,7 +39,7 @@ export function Editor(): JSX.Element {
   const { settings: globalSettings } = useSettings()
   const autosaveDelay = globalSettings.autosaveDelayMs
 
-  // Применяем настройки умной типографики к input-rule редактора.
+  // Apply smart-typography settings to the editor input rules.
   useEffect(() => {
     setTypographyConfig(globalSettings.typography)
   }, [globalSettings.typography])
@@ -55,7 +55,7 @@ export function Editor(): JSX.Element {
   const [projectCount, setProjectCount] = useState<ProjectStats>({ words: 0, chars: 0 })
   const [appearanceOpen, setAppearanceOpen] = useState(false)
 
-  // Предложенные ИИ-правки с рецензированием.
+  // AI-suggested edits with review.
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([])
   const [aiBusy, setAiBusy] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
@@ -90,8 +90,8 @@ export function Editor(): JSX.Element {
       refreshProjectStats()
       bumpDocVersion()
     } catch {
-      // Запись не удалась (диск/права/антивирус): возвращаем правки в очередь,
-      // если за время записи не появились более свежие, и повторяем позже.
+      // The write failed (disk/permissions/antivirus): put the edits back in
+      // the queue unless newer ones arrived meanwhile, and retry later.
       if (!pendingRef.current) pendingRef.current = pending
       setStatus('error')
       if (!timerRef.current) {
@@ -110,7 +110,7 @@ export function Editor(): JSX.Element {
     setDocCount({ words: cc.words(), chars: cc.characters() })
   }, [])
 
-  // Обработчик правок храним в ref, чтобы onUpdate всегда видел свежую логику.
+  // The update handler lives in a ref so onUpdate always sees fresh logic.
   const onUpdateRef = useRef<(editor: TipTapEditor) => void>(() => undefined)
 
   const editor = useEditor({
@@ -133,7 +133,7 @@ export function Editor(): JSX.Element {
     }, autosaveDelay)
   }
 
-  // Загрузка содержимого при смене документа; сохранение предыдущего при уходе.
+  // Load contents on document switch; save the previous one on leave.
   useEffect(() => {
     if (!editor) return
     if (!projectPath || !activeDocId) {
@@ -149,7 +149,7 @@ export function Editor(): JSX.Element {
         if (cancelled) return
         editor.commands.setContent(doc ?? createEmptyDocument(), false)
         updateDocCount(editor)
-        // Восстанавливаем незавершённые правки из документа.
+        // Restore unfinished suggestions from the document.
         setSuggestions(collectSuggestions(editor, reasonsRef.current))
       })
       .catch(() => undefined)
@@ -159,13 +159,13 @@ export function Editor(): JSX.Element {
     }
   }, [editor, projectPath, activeDocId, flushSave, updateDocCount])
 
-  // Статистика всего проекта при открытии проекта.
+  // Whole-project stats when a project opens.
   useEffect(() => {
     if (projectPath) refreshProjectStats()
     else setProjectCount({ words: 0, chars: 0 })
   }, [projectPath, refreshProjectStats])
 
-  // Режим печатной машинки: держим строку с курсором по центру.
+  // Typewriter mode: keep the caret line centered.
   useEffect(() => {
     if (!editor || !settings.typewriterMode) return
     const center = (): void => {
@@ -185,22 +185,22 @@ export function Editor(): JSX.Element {
     }
   }, [editor, settings.typewriterMode])
 
-  // Флаш несохранённого при размонтировании.
+  // Flush unsaved changes on unmount.
   useEffect(() => {
     return () => {
       void flushSave()
     }
   }, [flushSave])
 
-  // Регистрация в общем реестре: флаш перед закрытием окна и восстановлением бэкапа.
+  // Register in the shared registry: flushed before window close and backup restore.
   useEffect(() => registerFlusher(flushSave), [flushSave])
 
   const refreshSuggestions = useCallback(() => {
     if (editor) setSuggestions(collectSuggestions(editor, reasonsRef.current))
   }, [editor])
 
-  // Прокрутить так, чтобы текущее выделение оказалось примерно по центру.
-  // У конца документа браузер ограничит прокрутку — выйдет «по стандарту».
+  // Scroll so the current selection lands roughly at the center.
+  // Near the document end the browser clamps scrolling — standard behavior.
   const centerSelection = useCallback(() => {
     const scroll = scrollRef.current
     if (!editor || !scroll) return
@@ -211,7 +211,7 @@ export function Editor(): JSX.Element {
         const target = coords.top - rect.top - rect.height / 2 + scroll.scrollTop
         scroll.scrollTo({ top: Math.max(0, target), behavior: 'smooth' })
       } catch {
-        /* позиция могла исчезнуть — игнорируем */
+        /* the position may have disappeared — ignore */
       }
     })
   }, [editor])
@@ -220,7 +220,7 @@ export function Editor(): JSX.Element {
     (from: number, to: number, edits: Array<{ original: string; suggestion: string; reason: string }>) => {
       if (!editor) return
       const map = buildCharMap(editor, from, to)
-      // Нормализованный «стог» 1:1 с map — терпит расхождения по кавычкам/тире/пробелам.
+      // Normalized haystack 1:1 with map — tolerates quote/dash/space differences.
       const hay = map.map((m) => normalizeChar(m.ch)).join('')
       const used: Array<[number, number]> = []
       const located: Array<{ from: number; to: number; original: string; suggestion: string; reason: string }> = []
@@ -229,7 +229,7 @@ export function Editor(): JSX.Element {
         if (!e.original) continue
         const needle = normalizeFragment(e.original)
         if (!needle) continue
-        // Первое вхождение, не пересекающееся с уже занятыми правками (порядок не важен).
+        // First occurrence not overlapping already-claimed edits (order irrelevant).
         let at = 0
         let idx = -1
         for (;;) {
@@ -245,8 +245,8 @@ export function Editor(): JSX.Element {
         if (idx === -1) continue
         const end = idx + needle.length
         used.push([idx, end])
-        // В «удаление» кладём реальный текст документа, а не версию модели —
-        // чтобы отклонение правки восстанавливало именно исходные символы.
+        // The deletion part gets the actual document text, not the model's
+        // version — so rejecting the edit restores the original characters.
         const realOriginal = map.slice(idx, end).map((m) => m.ch).join('')
         located.push({
           from: map[idx].pos,
@@ -257,7 +257,7 @@ export function Editor(): JSX.Element {
         })
       }
 
-      // Применяем справа налево, чтобы позиции не смещались.
+      // Apply right-to-left so positions do not shift.
       located.sort((a, b) => b.from - a.from)
       for (const l of located) {
         const sid = newSid()
@@ -280,7 +280,7 @@ export function Editor(): JSX.Element {
     [editor, refreshSuggestions, centerSelection, t]
   )
 
-  // Текущий ИИ-запрос редактора — для отмены пользователем.
+  // The editor's current AI request — for user cancellation.
   const aiRequestRef = useRef<string | null>(null)
 
   const runAction = useCallback(
@@ -315,7 +315,7 @@ export function Editor(): JSX.Element {
           refreshSuggestions()
         }
       } catch (err) {
-        // Отменённый запрос не показываем как ошибку.
+        // A cancelled request is not shown as an error.
         if (aiRequestRef.current === requestId) {
           setAiError(err instanceof Error ? err.message : String(err))
         }
@@ -335,17 +335,17 @@ export function Editor(): JSX.Element {
     }
   }, [])
 
-  // ИИ-действия из контекстного меню (правый клик).
+  // AI actions from the context menu (right click).
   useEffect(() => {
     return window.api.editor.onAiAction((kind) => {
       void runAction(kind)
     })
   }, [runAction])
 
-  // Ctrl+F — поиск/замена.
+  // Ctrl+F — find/replace.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      // e.code (физическая клавиша), а не e.key — независимо от раскладки.
+      // e.code (physical key), not e.key — independent of keyboard layout.
       if ((e.ctrlKey || e.metaKey) && e.code === 'KeyF') {
         if (!projectPath || !activeDocId) return
         e.preventDefault()

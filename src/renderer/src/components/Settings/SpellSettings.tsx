@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useT } from '@renderer/lib/i18n'
 
-/** Управление пользовательским словарём орфографии (список/добавить/удалить). */
+/** Custom spelling dictionary management (list/add/remove). */
 export function SpellSettingsSection(): JSX.Element {
   const t = useT()
   const [words, setWords] = useState<string[]>([])
