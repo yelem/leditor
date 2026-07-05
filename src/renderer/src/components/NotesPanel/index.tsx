@@ -21,9 +21,8 @@ function escapeHtml(s: string): string {
 }
 
 /**
- * Заметки теперь хранят HTML. Старые заметки лежали как plain-text — если
- * строка не начинается с тега, считаем её простым текстом и оборачиваем
- * каждую строку в абзац.
+ * Заметки хранятся как HTML. Строка без открывающего тега считается
+ * plain-text (прежний формат) — каждая её строка оборачивается в абзац.
  */
 function noteToHtml(raw: string): string {
   if (!raw) return ''
@@ -75,8 +74,8 @@ export function NotesPanel(): JSX.Element {
     onUpdate: ({ editor }) => onUpdateRef.current(editor)
   })
 
-  // Захватываем главу и HTML на момент правки — переключение главы до срабатывания
-  // таймера не «перельёт» текст в чужую заметку.
+  // Захватываем главу и HTML на момент правки: переключение главы до
+  // срабатывания таймера не запишет текст в заметку другой главы.
   onUpdateRef.current = (ed: TipTapEditor) => {
     const ctx = ctxRef.current
     if (!ctx) return
