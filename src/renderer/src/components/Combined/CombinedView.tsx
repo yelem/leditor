@@ -7,7 +7,7 @@ import { editorExtensions } from '../Editor/extensions'
 import { useT } from '@renderer/lib/i18n'
 import './combined.css'
 
-/** Сведённый просмотр всех глав (или папки) одной страницей. Только чтение. */
+/** Combined view of all chapters (or one folder) as a single page. Read-only. */
 export function CombinedView(): JSX.Element {
   const t = useT()
   const { projectPath, manifest, combinedScope, closeCombined } = useProject()
@@ -72,7 +72,7 @@ export function CombinedView(): JSX.Element {
         {items.length === 0 ? (
           <div className="combined__empty">{t('combined.empty')}</div>
         ) : (
-          // Одна непрерывная «страница» со всеми главами подряд.
+          // One continuous page with all chapters in a row.
           <article className="editor__page combined__page" style={pageStyle}>
             {items.map((it, i) => (
               <section key={it.id} className={`combined__chapter${i > 0 ? ' is-next' : ''}`}>

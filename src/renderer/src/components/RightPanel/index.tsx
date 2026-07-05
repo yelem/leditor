@@ -9,11 +9,11 @@ type Tab = 'chat' | 'notes'
 
 const TAB_KEY = 'book-editor.rightTab'
 
-/** Правый блок с вкладками: Ассистент и Заметки (для каждой главы). */
+/** Right-hand block with tabs: Assistant and Notes (per chapter). */
 export function RightPanel(): JSX.Element {
   const t = useT()
-  // Вкладку храним в localStorage: панель размонтируется при скрытии, и выбор
-  // не должен сбрасываться на «Ассистент» при повторном показе.
+  // The tab is kept in localStorage: the panel unmounts when hidden, and the
+  // choice must not reset to Assistant when shown again.
   const [tab, setTabState] = useState<Tab>(() =>
     localStorage.getItem(TAB_KEY) === 'notes' ? 'notes' : 'chat'
   )

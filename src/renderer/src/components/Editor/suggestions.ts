@@ -1,6 +1,6 @@
 import type { Editor } from '@tiptap/react'
 
-/** Одна предложенная правка (для панели обзора). */
+/** One suggested edit (for the review panel). */
 export interface SuggestionItem {
   sid: string
   original: string
@@ -20,9 +20,9 @@ interface Range {
 }
 
 /**
- * Привести один символ к каноничному виду для нечёткого сопоставления правок:
- * типографские кавычки/тире/пробелы — к простым. Преобразование 1:1 (длина не
- * меняется), поэтому позиции в нормализованной строке совпадают с исходными.
+ * Canonicalize one character for fuzzy edit matching: typographic
+ * quotes/dashes/spaces map to plain ones. The mapping is 1:1 (length is
+ * preserved), so positions in the normalized string match the original.
  */
 export function normalizeChar(ch: string): string {
   if ('«»„“”‹›"˝'.includes(ch)) return '"'
@@ -33,14 +33,14 @@ export function normalizeChar(ch: string): string {
 }
 
 /**
- * Нормализовать фрагмент-«иголку» от модели: сначала схлопнуть «...» в «…»
- * (в тексте многоточие — один символ из-за типографики), затем посимвольно.
+ * Normalize the needle fragment from the model: first collapse "..." into "…"
+ * (the ellipsis is one character in the text due to typography), then per char.
  */
 export function normalizeFragment(s: string): string {
   return Array.from(s.replace(/\.{3}/g, '…')).map(normalizeChar).join('')
 }
 
-/** Карта «позиция в документе → символ» для текстовых узлов диапазона [from,to]. */
+/** Map of document position → character for text nodes in the [from,to] range. */
 export function buildCharMap(editor: Editor, from: number, to: number): Array<{ pos: number; ch: string }> {
   const map: Array<{ pos: number; ch: string }> = []
   editor.state.doc.nodesBetween(from, to, (node, pos) => {
@@ -57,8 +57,8 @@ export function buildCharMap(editor: Editor, from: number, to: number): Array<{ 
 }
 
 /**
- * Заменить диапазон [from,to] предложенной правкой: исходный текст помечается
- * как удаление, новый текст — как вставка. Обе части несут sid.
+ * Replace the [from,to] range with a suggested edit: the original text is
+ * marked as a deletion, the new text as an insertion. Both carry the sid.
  */
 export function applyReplaceSuggestion(
   editor: Editor,
@@ -100,7 +100,7 @@ function findMarkRanges(editor: Editor, markName: string, sid: string): Range[] 
   return ranges
 }
 
-/** Прокрутить редактор к правке и выделить её. */
+/** Scroll the editor to the edit and select it. */
 export function scrollToSuggestion(editor: Editor, sid: string): void {
   const ranges = [...findMarkRanges(editor, 'deletion', sid), ...findMarkRanges(editor, 'insertion', sid)]
   if (ranges.length === 0) return
@@ -109,7 +109,7 @@ export function scrollToSuggestion(editor: Editor, sid: string): void {
   editor.chain().setTextSelection({ from, to }).run()
 }
 
-/** Принять правку: удалить «удаления», снять метку со «вставок» (оставить текст). */
+/** Accept an edit: remove deletions, unmark insertions (keep the text). */
 export function acceptSuggestion(editor: Editor, sid: string): void {
   editor
     .chain()
@@ -124,7 +124,7 @@ export function acceptSuggestion(editor: Editor, sid: string): void {
     .run()
 }
 
-/** Собрать список предложенных правок из документа (по маркам). */
+/** Collect the list of suggested edits from the document (by marks). */
 export function collectSuggestions(editor: Editor, reasons: Map<string, string>): SuggestionItem[] {
   const del = new Map<string, string>()
   const ins = new Map<string, string>()
@@ -153,7 +153,7 @@ export function collectSuggestions(editor: Editor, reasons: Map<string, string>)
   }))
 }
 
-/** Отклонить правку: удалить «вставки», снять метку с «удалений» (восстановить). */
+/** Reject an edit: remove insertions, unmark deletions (restore the text). */
 export function rejectSuggestion(editor: Editor, sid: string): void {
   editor
     .chain()

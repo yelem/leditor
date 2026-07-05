@@ -1,6 +1,6 @@
 /**
- * Оркестрация экспорта: собирает «единицы» (файлы) по выбранной гранулярности
- * и пишет их в выбранную папку в нужном формате.
+ * Export orchestration: assembles the units (files) per the chosen
+ * granularity and writes them to the chosen folder in the requested format.
  */
 
 import { promises as fs } from 'node:fs'
@@ -16,7 +16,7 @@ import {
   type ExportUnit
 } from './export-convert'
 
-/** Документы поддерева в порядке обхода (id + заголовок). */
+/** Subtree documents in traversal order (id + title). */
 function collectDocs(nodes: TreeNode[]): Array<{ id: string; title: string }> {
   const out: Array<{ id: string; title: string }> = []
   for (const n of nodes) {
@@ -42,7 +42,7 @@ export async function exportProject(
     content: (await readDocument(projectPath, id)) ?? createEmptyDocument()
   })
 
-  // Сформировать единицы экспорта.
+  // Build the export units.
   const units: ExportUnit[] = []
 
   if (options.granularity === 'project') {
@@ -60,7 +60,7 @@ export async function exportProject(
       units.push({ title: d.title, sections: [await loadSection(d.id, d.title)] })
     }
   } else {
-    // perFolder: каждый узел верхнего уровня — отдельный файл.
+    // perFolder: each top-level node becomes a separate file.
     for (const node of manifest.tree) {
       const docs = node.type === 'folder' ? collectDocs(node.children) : [{ id: node.id, title: node.title }]
       if (docs.length === 0) continue
@@ -69,7 +69,7 @@ export async function exportProject(
     }
   }
 
-  // Записать единицы в выбранную папку.
+  // Write the units to the chosen folder.
   const written: string[] = []
   const used = new Set<string>()
   onProgress?.(0, units.length)

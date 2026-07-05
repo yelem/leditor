@@ -14,7 +14,7 @@ import { setRendererLanguage } from '@renderer/lib/i18n'
 interface SettingsContextValue {
   settings: GlobalSettings
   loaded: boolean
-  /** Слить частичные изменения верхнего уровня и сохранить в userData. */
+  /** Merge partial top-level changes and persist to userData. */
   patch: (partial: Partial<GlobalSettings>) => void
   toggleTheme: () => void
 }
@@ -27,7 +27,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
   const settingsRef = useRef(settings)
   settingsRef.current = settings
 
-  // Загрузка глобальных настроек при старте.
+  // Load global settings on startup.
   useEffect(() => {
     let cancelled = false
     window.api.settings
@@ -43,12 +43,12 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
     }
   }, [])
 
-  // Применение темы к корню документа.
+  // Apply the theme to the document root.
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.theme)
   }, [settings.theme])
 
-  // Язык для не-React потребителей (placeholder редактора и т.п.).
+  // Language for non-React consumers (editor placeholder, etc.).
   useEffect(() => {
     setRendererLanguage(settings.language)
   }, [settings.language])
@@ -81,7 +81,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
 export function useSettings(): SettingsContextValue {
   const ctx = useContext(SettingsContext)
   if (!ctx) {
-    throw new Error('useSettings должен использоваться внутри <SettingsProvider>')
+    throw new Error('useSettings must be used inside <SettingsProvider>')
   }
   return ctx
 }

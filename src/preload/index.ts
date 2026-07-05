@@ -5,8 +5,8 @@ import type { AiStreamEvent } from '@shared/ai-types'
 import type { ExportProgress } from '@shared/export-types'
 
 /**
- * Мост renderer → main. Единственный канал доступа UI к возможностям
- * main-процесса. Никакого прямого доступа к Node/файловой системе из renderer.
+ * The renderer → main bridge. The only channel the UI has to main-process
+ * capabilities. No direct Node/filesystem access from the renderer.
  */
 const api: AppApi = {
   ping: () => ipcRenderer.invoke(IpcChannels.ping),
@@ -132,11 +132,11 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
-    console.error('Не удалось выставить API через contextBridge:', error)
+    console.error('Failed to expose API via contextBridge:', error)
   }
 } else {
-  // Резервный путь (contextIsolation должен быть включён всегда).
-  // @ts-ignore — определено в src/preload/index.d.ts
+  // Fallback path (contextIsolation should always be enabled).
+  // @ts-ignore — declared in src/preload/index.d.ts
   window.electron = electronAPI
   // @ts-ignore
   window.api = api

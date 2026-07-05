@@ -1,5 +1,5 @@
 /**
- * IPC-обработчики нативных диалогов общего назначения.
+ * IPC handlers for general-purpose native dialogs.
  */
 
 import { dialog, ipcMain, shell, type BrowserWindow } from 'electron'

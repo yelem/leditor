@@ -1,10 +1,9 @@
 /**
- * Чистая доменная модель проекта.
+ * Pure project domain model.
  *
- * Только работа с деревом и манифестом в памяти — никакого обращения к диску,
- * сети или Electron API. Все функции, изменяющие дерево, иммутабельны
- * (возвращают новые массивы), что упрощает использование в React-состоянии
- * и предсказуемое сохранение.
+ * Works only with the tree and manifest in memory — no disk, network or
+ * Electron API access. All tree-mutating functions are immutable (return new
+ * arrays), which simplifies use in React state and makes persistence predictable.
  */
 
 import { randomUUID } from 'node:crypto'
@@ -18,12 +17,12 @@ import {
   SCHEMA_VERSION
 } from '@shared/project-types'
 
-/** Создать новый узел дерева. */
+/** Create a new tree node. */
 export function createNode(type: NodeType, title: string): TreeNode {
   return { id: randomUUID(), type, title, children: [] }
 }
 
-/** Манифест нового проекта со стартовой структурой (часть + первая глава). */
+/** Manifest of a new project with the starter structure (part + first chapter). */
 export function createNewManifest(
   title: string,
   settings: ProjectSettings = DEFAULT_PROJECT_SETTINGS,
@@ -45,7 +44,7 @@ export function createNewManifest(
   }
 }
 
-/** Найти узел по id (с обходом всего дерева). */
+/** Find a node by id (searching the whole tree). */
 export function findNode(tree: TreeNode[], id: string): TreeNode | null {
   for (const node of tree) {
     if (node.id === id) return node
@@ -55,7 +54,7 @@ export function findNode(tree: TreeNode[], id: string): TreeNode | null {
   return null
 }
 
-/** Собрать id всех узлов-документов в дереве. */
+/** Collect ids of all document nodes in the tree. */
 export function collectDocumentIds(tree: TreeNode[]): string[] {
   const ids: string[] = []
   for (const node of tree) {
@@ -66,8 +65,8 @@ export function collectDocumentIds(tree: TreeNode[]): string[] {
 }
 
 /**
- * Вставить узел. parentId === null — в корень. index === undefined — в конец.
- * Вставлять можно только внутрь папки.
+ * Insert a node. parentId === null — into the root. index === undefined — at the end.
+ * Only folders can receive children.
  */
 export function insertNode(
   tree: TreeNode[],
@@ -97,7 +96,7 @@ export function insertNode(
   })
 }
 
-/** Удалить узел по id. Возвращает новое дерево и удалённый узел (или null). */
+/** Remove a node by id. Returns the new tree and the removed node (or null). */
 export function removeNode(
   tree: TreeNode[],
   id: string
@@ -122,7 +121,7 @@ export function removeNode(
   return { tree: next, removed }
 }
 
-/** Переименовать узел. */
+/** Rename a node. */
 export function renameNode(tree: TreeNode[], id: string, title: string): TreeNode[] {
   return tree.map((node) => {
     if (node.id === id) return { ...node, title }
@@ -133,7 +132,7 @@ export function renameNode(tree: TreeNode[], id: string, title: string): TreeNod
   })
 }
 
-/** Является ли `ancestorId` предком (или самим) узла `nodeId`. */
+/** Whether `ancestorId` is an ancestor of (or the same as) `nodeId`. */
 export function isDescendant(tree: TreeNode[], ancestorId: string, nodeId: string): boolean {
   const ancestor = findNode(tree, ancestorId)
   if (!ancestor) return false
@@ -154,7 +153,7 @@ function locate(
   return null
 }
 
-/** Найти родителя (null — корень) и индекс узла среди соседей. */
+/** Find the parent (null — root) and the node's index among siblings. */
 export function locateNode(
   tree: TreeNode[],
   id: string
@@ -163,11 +162,11 @@ export function locateNode(
 }
 
 /**
- * Переместить узел `id` внутрь `newParentId` (null — корень) на позицию index.
- * Запрещает перемещение узла внутрь самого себя/своего поддерева.
+ * Move node `id` into `newParentId` (null — root) at position index.
+ * Moving a node into itself/its own subtree is forbidden.
  *
- * Index трактуется как желаемая позиция в целевом списке. При перемещении внутри
- * того же родителя на более позднюю позицию учитывается сдвиг после удаления.
+ * Index is the desired position in the target list. When moving within the
+ * same parent to a later position, the shift after removal is accounted for.
  */
 export function moveNode(
   tree: TreeNode[],
@@ -193,9 +192,9 @@ export function moveNode(
 }
 
 /**
- * Пары [idОригинала, idКопии] для узлов-документов двух структурно одинаковых
- * деревьев (оригинал и результат duplicateNode). Нужны для копирования файлов
- * содержимого при дублировании.
+ * [originalId, copyId] pairs for document nodes of two structurally identical
+ * trees (the original and the duplicateNode result). Used to copy content
+ * files when duplicating.
  */
 export function pairDocumentIds(original: TreeNode, copy: TreeNode): Array<[string, string]> {
   const pairs: Array<[string, string]> = []
@@ -206,7 +205,7 @@ export function pairDocumentIds(original: TreeNode, copy: TreeNode): Array<[stri
   return pairs
 }
 
-/** Глубокая копия узла с новыми id (для дублирования). */
+/** Deep copy of a node with new ids (for duplication). */
 export function duplicateNode(node: TreeNode): TreeNode {
   return {
     id: randomUUID(),
@@ -216,11 +215,11 @@ export function duplicateNode(node: TreeNode): TreeNode {
   }
 }
 
-// --- Корзина ---
+// --- Trash ---
 
 /**
- * Оставить из набора id только «верхнеуровневые»: убрать те, что являются
- * потомками других выбранных узлов (они и так уедут вместе с предком).
+ * Keep only the top-level ids in the set: drop those that are descendants of
+ * other selected nodes (they travel with their ancestor anyway).
  */
 function topLevelIds(tree: TreeNode[], ids: string[]): string[] {
   return ids.filter(
@@ -229,9 +228,9 @@ function topLevelIds(tree: TreeNode[], ids: string[]): string[] {
 }
 
 /**
- * Переместить узлы (вместе с поддеревьями) в корзину, запомнив их исходное
- * расположение. Файлы содержимого/заметок НЕ трогаются — они нужны для
- * восстановления; удаляются лишь при окончательной очистке корзины.
+ * Move nodes (with their subtrees) to trash, remembering their original
+ * location. Content/note files are NOT touched — they are needed for
+ * restoration and are deleted only when the trash is emptied for good.
  */
 export function trashNodes(manifest: ProjectManifest, ids: string[]): ProjectManifest {
   const now = new Date().toISOString()
@@ -243,7 +242,7 @@ export function trashNodes(manifest: ProjectManifest, ids: string[]): ProjectMan
     const { tree: next, removed } = removeNode(tree, id)
     if (removed && loc) {
       tree = next
-      // Новые элементы — в начало (свежие сверху).
+      // New items go first (newest on top).
       trash.unshift({ node: removed, parentId: loc.parentId, index: loc.index, deletedAt: now })
     }
   }
@@ -252,8 +251,8 @@ export function trashNodes(manifest: ProjectManifest, ids: string[]): ProjectMan
 }
 
 /**
- * Восстановить узел из корзины на исходное место. Если исходный родитель уже
- * не существует (например, сам в корзине), узел возвращается в корень.
+ * Restore a node from trash to its original place. If the original parent no
+ * longer exists (e.g. it is in the trash itself), the node goes to the root.
  */
 export function restoreFromTrash(manifest: ProjectManifest, id: string): ProjectManifest {
   const item = manifest.trash.find((t) => t.node.id === id)
@@ -266,8 +265,8 @@ export function restoreFromTrash(manifest: ProjectManifest, id: string): Project
 }
 
 /**
- * Окончательно удалить элемент из корзины. Возвращает обновлённый манифест и
- * удалённое поддерево (чтобы вызывающий код стёр файлы его документов).
+ * Permanently delete a trash item. Returns the updated manifest and the
+ * removed subtree (so the caller can erase its document files).
  */
 export function removeFromTrash(
   manifest: ProjectManifest,
@@ -278,7 +277,7 @@ export function removeFromTrash(
   return { manifest: { ...manifest, trash }, removed: item?.node ?? null }
 }
 
-/** Очистить корзину целиком. Возвращает удалённые поддеревья (для стирания файлов). */
+/** Empty the whole trash. Returns the removed subtrees (for file erasure). */
 export function emptyTrash(manifest: ProjectManifest): {
   manifest: ProjectManifest
   removed: TreeNode[]

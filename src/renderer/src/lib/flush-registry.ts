@@ -1,17 +1,17 @@
 /**
- * Реестр «флашеров» — функций, немедленно записывающих на диск отложенные
- * (debounce) изменения: текст главы, заметки и т.п.
+ * Registry of flushers — functions that immediately write pending (debounced)
+ * changes to disk: chapter text, notes, etc.
  *
- * Компоненты с автосохранением регистрируют свой flush; перед закрытием окна
- * (по запросу main) и перед восстановлением из бэкапа вызывается flushAll(),
- * чтобы несохранённые правки не потерялись и не перезаписали восстановленное.
+ * Components with autosave register their flush; flushAll() runs before the
+ * window closes (on main's request) and before a backup restore, so unsaved
+ * edits are neither lost nor written over the restored state.
  */
 
 type Flusher = () => Promise<void> | void
 
 const flushers = new Set<Flusher>()
 
-/** Зарегистрировать флашер. Возвращает функцию отмены регистрации. */
+/** Register a flusher. Returns an unregister function. */
 export function registerFlusher(fn: Flusher): () => void {
   flushers.add(fn)
   return () => {
@@ -19,7 +19,7 @@ export function registerFlusher(fn: Flusher): () => void {
   }
 }
 
-/** Выполнить все зарегистрированные флашеры; ошибки не прерывают остальные. */
+/** Run all registered flushers; errors do not stop the rest. */
 export async function flushAll(): Promise<void> {
   await Promise.allSettled([...flushers].map((fn) => Promise.resolve().then(fn)))
 }

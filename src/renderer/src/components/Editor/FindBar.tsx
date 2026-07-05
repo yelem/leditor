@@ -6,11 +6,11 @@ import { useT } from '@renderer/lib/i18n'
 interface FindBarProps {
   editor: Editor | null
   onClose: () => void
-  /** Вызывается после перехода к совпадению — для центрирования его в окне. */
+  /** Called after jumping to a match — to center it in the window. */
   onNavigate?: () => void
 }
 
-/** Панель поиска и замены (Ctrl+F). */
+/** Find & replace bar (Ctrl+F). */
 export function FindBar({ editor, onClose, onNavigate }: FindBarProps): JSX.Element {
   const t = useT()
   const [query, setQuery] = useState('')
@@ -94,7 +94,7 @@ export function FindBar({ editor, onClose, onNavigate }: FindBarProps): JSX.Elem
               applySearch(query, e.target.checked)
             }}
           />
-          Аа
+          Aa
         </label>
         <button type="button" className="find__close" title={t('find.close')} onClick={onClose}>
           ✕

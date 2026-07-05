@@ -9,7 +9,7 @@ interface FontSelectProps {
   className?: string
 }
 
-/** Выбор шрифта: рекомендуемые + системные (подгружаются по первому клику). */
+/** Font picker: recommended + system fonts (loaded on first click). */
 export function FontSelect({ value, onChange, className }: FontSelectProps): JSX.Element {
   const t = useT()
   const [system, setSystem] = useState<string[]>(getCachedFonts())
@@ -31,7 +31,7 @@ export function FontSelect({ value, onChange, className }: FontSelectProps): JSX
       onMouseDown={ensureFonts}
       onFocus={ensureFonts}
     >
-      {/* Текущее значение, если оно ещё не в списках (системные не загружены). */}
+      {/* Current value when not in the lists yet (system fonts not loaded). */}
       {!knownValues.has(value) && <option value={value}>{value.replace(/"/g, '')}</option>}
       <optgroup label={t('fonts.recommended')}>
         {FONT_OPTIONS.map((o) => (

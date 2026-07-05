@@ -22,7 +22,7 @@
   overflow: hidden;
 }
 
-/* Контейнер вкладок: боковая навигация + прокручиваемая область. */
+/* Tab container: side navigation + scrollable area. */
 .settings__main {
   display: flex;
   flex: 1 1 auto;
@@ -210,7 +210,7 @@
   opacity: 0.5;
 }
 
-/* Пользовательский словарь. */
+/* Custom dictionary. */
 .dict-empty {
   margin: 12px 0 0;
   font-size: 12px;
@@ -274,7 +274,7 @@
   color: #c0524a;
 }
 
-/* --- Список ИИ-профилей --- */
+/* --- AI profile list --- */
 .ai-list {
   list-style: none;
   margin: 0 0 12px;
@@ -326,7 +326,7 @@
   flex: 0 0 auto;
 }
 
-/* --- Редактор профиля (модалка поверх настроек) --- */
+/* --- Profile editor (modal above the settings) --- */
 .ai-editor__backdrop {
   position: fixed;
   inset: 0;

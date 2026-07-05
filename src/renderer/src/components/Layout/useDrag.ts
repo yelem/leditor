@@ -1,9 +1,9 @@
 import { useCallback, useRef } from 'react'
 
 /**
- * Хук горизонтального перетаскивания для разделителей панелей.
- * Возвращает обработчик onMouseDown; на каждое движение вызывает onDelta(dx),
- * где dx — смещение курсора по X с предыдущего события.
+ * Horizontal-drag hook for panel dividers.
+ * Returns an onMouseDown handler; on every move it calls onDelta(dx),
+ * where dx is the cursor's X offset since the previous event.
  */
 export function useDrag(onDelta: (deltaX: number) => void): (e: React.MouseEvent) => void {
   const onDeltaRef = useRef(onDelta)

@@ -62,7 +62,7 @@
   border-top: 1px solid var(--border);
 }
 
-/* Фиксированная ширина под единицу — чтобы поля выравнивались по колонке. */
+/* Fixed width for the unit — keeps fields aligned in a column. */
 .numfield__suffix {
   min-width: 26px;
   font-size: 12px;

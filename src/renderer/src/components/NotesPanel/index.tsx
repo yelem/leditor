@@ -21,8 +21,8 @@ function escapeHtml(s: string): string {
 }
 
 /**
- * Заметки хранятся как HTML. Строка без открывающего тега считается
- * plain-text (прежний формат) — каждая её строка оборачивается в абзац.
+ * Notes are stored as HTML. A string without an opening tag is treated as
+ * plain text (the older format) — each of its lines is wrapped in a paragraph.
  */
 function noteToHtml(raw: string): string {
   if (!raw) return ''
@@ -33,7 +33,7 @@ function noteToHtml(raw: string): string {
     .join('')
 }
 
-/** Заметки для текущей главы. Автосохранение в notes/<id>.json. */
+/** Notes for the current chapter. Autosaved to notes/<id>.json. */
 export function NotesPanel(): JSX.Element {
   const t = useT()
   const { projectPath, manifest, activeDocId } = useProject()
@@ -48,7 +48,7 @@ export function NotesPanel(): JSX.Element {
     [manifest, activeDocId]
   )
 
-  // Записать накопленную (отложенную) заметку немедленно.
+  // Write the accumulated (pending) note immediately.
   const flush = useCallback(async (): Promise<void> => {
     if (timerRef.current) {
       clearTimeout(timerRef.current)
@@ -61,7 +61,7 @@ export function NotesPanel(): JSX.Element {
       await window.api.workspace.saveNote(p.path, p.id, p.html)
       setStatus('saved')
     } catch {
-      // Возвращаем в очередь, если за время записи не появилось свежее.
+      // Put it back in the queue unless something newer arrived during the write.
       if (!pendingRef.current) pendingRef.current = p
       setStatus('idle')
     }
@@ -74,8 +74,8 @@ export function NotesPanel(): JSX.Element {
     onUpdate: ({ editor }) => onUpdateRef.current(editor)
   })
 
-  // Захватываем главу и HTML на момент правки: переключение главы до
-  // срабатывания таймера не запишет текст в заметку другой главы.
+  // Capture the chapter and HTML at edit time: switching chapters before the
+  // timer fires will not write the text into another chapter's note.
   onUpdateRef.current = (ed: TipTapEditor) => {
     const ctx = ctxRef.current
     if (!ctx) return
@@ -85,7 +85,7 @@ export function NotesPanel(): JSX.Element {
     timerRef.current = setTimeout(() => flush(), 500)
   }
 
-  // Смена главы: сохраняем незаписанное, затем грузим заметку новой главы.
+  // Chapter switch: save what is pending, then load the new chapter's note.
   useEffect(() => {
     if (!editor) return
     void flush()
@@ -105,7 +105,7 @@ export function NotesPanel(): JSX.Element {
     }
   }, [editor, projectPath, activeDocId, flush])
 
-  // Сохраняем незаписанное при размонтировании.
+  // Save pending changes on unmount.
   useEffect(
     () => () => {
       void flush()
@@ -113,7 +113,7 @@ export function NotesPanel(): JSX.Element {
     [flush]
   )
 
-  // Регистрация в общем реестре: флаш перед закрытием окна и восстановлением бэкапа.
+  // Register in the shared registry: flushed before window close and backup restore.
   useEffect(() => registerFlusher(flush), [flush])
 
   if (!projectPath || !activeDocId) {

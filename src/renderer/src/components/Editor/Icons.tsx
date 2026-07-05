@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-/** Иконки тулбара форматирования (контурный стиль, наследуют currentColor). */
+/** Formatting toolbar icons (outline style, inherit currentColor). */
 const PATHS: Record<string, ReactNode> = {
   undo: (
     <>

@@ -1,9 +1,9 @@
 /**
- * Контракт IPC между renderer и main.
+ * The IPC contract between renderer and main.
  *
- * Здесь объявляются имена каналов и типы публичного API, выставляемого
- * в renderer через preload (`window.api`). И main, и renderer ссылаются
- * на этот файл — единый источник правды для связи процессов.
+ * Declares channel names and the types of the public API exposed to the
+ * renderer via preload (`window.api`). Both main and renderer reference
+ * this file — the single source of truth for inter-process communication.
  */
 
 import type {
@@ -26,248 +26,248 @@ import type {
 import type { ExportOptions, ExportProgress, ExportResult } from './export-types'
 
 export const IpcChannels = {
-  /** Проверка связи renderer → main. Возвращает строку "pong". */
+  /** Renderer → main health check. Returns the string "pong". */
   ping: 'app:ping',
 
-  /** Создать новый проект (диалог выбора расположения). */
+  /** Create a new project (location picker dialog). */
   projectCreate: 'project:create',
-  /** Открыть существующий проект (диалог выбора папки). */
+  /** Open an existing project (folder picker dialog). */
   projectOpen: 'project:open',
-  /** Открыть проект по известному пути (без диалога). */
+  /** Open a project by a known path (no dialog). */
   projectOpenPath: 'project:openPath',
-  /** Сохранить манифест проекта. */
+  /** Save the project manifest. */
   projectSave: 'project:save',
-  /** Статистика слов/символов по всему проекту. */
+  /** Word/character stats for the whole project. */
   projectStats: 'project:stats',
 
-  /** Загрузить содержимое документа. */
+  /** Load document contents. */
   documentLoad: 'document:load',
-  /** Сохранить содержимое документа. */
+  /** Save document contents. */
   documentSave: 'document:save',
 
-  /** Создать узел дерева (папку/документ). */
+  /** Create a tree node (folder/document). */
   treeCreate: 'tree:create',
-  /** Переименовать узел. */
+  /** Rename a node. */
   treeRename: 'tree:rename',
-  /** Удалить узел (с поддеревом). */
+  /** Remove a node (with its subtree). */
   treeRemove: 'tree:remove',
-  /** Переместить/переупорядочить узел. */
+  /** Move/reorder a node. */
   treeMove: 'tree:move',
-  /** Дублировать узел (с поддеревом и содержимым). */
+  /** Duplicate a node (with subtree and contents). */
   treeDuplicate: 'tree:duplicate',
 
-  /** Переместить узлы в корзину (с поддеревьями). */
+  /** Move nodes to trash (with subtrees). */
   trashMove: 'trash:move',
-  /** Восстановить узел из корзины. */
+  /** Restore a node from trash. */
   trashRestore: 'trash:restore',
-  /** Окончательно удалить элемент корзины (вместе с файлами). */
+  /** Permanently delete a trash item (with its files). */
   trashDelete: 'trash:delete',
-  /** Очистить корзину целиком. */
+  /** Empty the whole trash. */
   trashEmpty: 'trash:empty',
 
-  /** Прочитать глобальные настройки. */
+  /** Read global settings. */
   settingsGet: 'settings:get',
-  /** Сохранить глобальные настройки. */
+  /** Save global settings. */
   settingsSet: 'settings:set',
 
-  /** Проект открыт (снапшот при открытии + отслеживание текущего). */
+  /** Project opened (snapshot-on-open + current project tracking). */
   backupProjectOpened: 'backup:projectOpened',
-  /** Проект закрывается (снапшот при закрытии). */
+  /** Project is closing (snapshot-on-close). */
   backupProjectClosing: 'backup:projectClosing',
-  /** Сделать снапшот (вручную/по интервалу). */
+  /** Take a snapshot (manual/interval). */
   backupSnapshot: 'backup:snapshot',
-  /** Список снапшотов. */
+  /** List snapshots. */
   backupList: 'backup:list',
-  /** Восстановить из снапшота. */
+  /** Restore from a snapshot. */
   backupRestore: 'backup:restore',
-  /** Удалить снапшот. */
+  /** Delete a snapshot. */
   backupDelete: 'backup:delete',
 
-  /** Выбрать папку (нативный диалог). */
+  /** Pick a folder (native dialog). */
   dialogPickDirectory: 'dialog:pickDirectory',
-  /** Открыть путь в системе (папку/файл). */
+  /** Open a path in the OS (folder/file). */
   shellOpenPath: 'shell:openPath',
-  /** Экспорт проекта в выбранный формат. */
+  /** Export the project to the chosen format. */
   exportRun: 'export:run',
-  /** Прогресс экспорта (main → renderer). */
+  /** Export progress (main → renderer). */
   exportProgress: 'export:progress',
-  /** Запрос открыть проект по пути (двойной клик/ассоциация/аргумент). */
+  /** Request to open a project by path (double click/association/argument). */
   appOpenProject: 'app:openProject',
-  /** Окно закрывается: renderer должен долить несохранённое (main → renderer). */
+  /** Window is closing: renderer must flush unsaved changes (main → renderer). */
   appWillClose: 'app:willClose',
-  /** Подтверждение renderer: несохранённое записано, можно закрываться. */
+  /** Renderer confirmation: unsaved changes written, safe to close. */
   appCloseReady: 'app:closeReady',
 
-  /** Действие ИИ над выделением, выбранное в контекстном меню (main → renderer). */
+  /** AI action on the selection, chosen in the context menu (main → renderer). */
   editorAiAction: 'editor:aiAction',
-  /** Список слов пользовательского словаря. */
+  /** Words of the custom dictionary. */
   spellListWords: 'spell:listWords',
-  /** Добавить слово в словарь. */
+  /** Add a word to the dictionary. */
   spellAddWord: 'spell:addWord',
-  /** Удалить слово из словаря. */
+  /** Remove a word from the dictionary. */
   spellRemoveWord: 'spell:removeWord',
-  /** Экспортировать пользовательский словарь в файл. */
+  /** Export the custom dictionary to a file. */
   spellExportWords: 'spell:exportWords',
-  /** Импортировать слова из файла в словарь. */
+  /** Import words from a file into the dictionary. */
   spellImportWords: 'spell:importWords',
 
-  /** Доступно ли безопасное хранилище ключей. */
+  /** Whether secure key storage is available. */
   aiStorageAvailable: 'ai:storageAvailable',
-  /** Задан ли ключ для профиля. */
+  /** Whether a key is set for the profile. */
   aiKeyStatus: 'ai:keyStatus',
-  /** Сохранить ключ профиля (в safeStorage). */
+  /** Save the profile key (into safeStorage). */
   aiSetKey: 'ai:setKey',
-  /** Удалить ключ профиля. */
+  /** Delete the profile key. */
   aiDeleteKey: 'ai:deleteKey',
-  /** Проверить соединение по черновику профиля. */
+  /** Test the connection using a profile draft. */
   aiTest: 'ai:test',
-  /** Список моделей провайдера по черновику. */
+  /** List provider models using a draft. */
   aiListModels: 'ai:listModels',
-  /** Чат с активным провайдером (стриминг через события). */
+  /** Chat with the active provider (streamed via events). */
   aiChat: 'ai:chat',
-  /** Прервать запрос чата. */
+  /** Abort a chat request. */
   aiAbort: 'ai:abort',
-  /** Улучшить текст по инструкции. */
+  /** Improve text according to an instruction. */
   aiImprove: 'ai:improve',
-  /** Проверить грамматику/стиль (список правок). */
+  /** Check grammar/style (list of edits). */
   aiGrammar: 'ai:grammar',
-  /** Канал событий стриминга чата (main → renderer). */
+  /** Chat streaming event channel (main → renderer). */
   aiStream: 'ai:stream',
 
-  /** Загрузить историю чата проекта. */
+  /** Load the project chat history. */
   chatLoad: 'workspace:chatLoad',
-  /** Сохранить историю чата проекта. */
+  /** Save the project chat history. */
   chatSave: 'workspace:chatSave',
-  /** Загрузить кэш кратких содержаний. */
+  /** Load the chapter-summaries cache. */
   summariesLoad: 'workspace:summariesLoad',
-  /** Сохранить кэш кратких содержаний. */
+  /** Save the chapter-summaries cache. */
   summariesSave: 'workspace:summariesSave',
-  /** Загрузить заметку главы. */
+  /** Load a chapter note. */
   noteLoad: 'workspace:noteLoad',
-  /** Сохранить заметку главы. */
+  /** Save a chapter note. */
   noteSave: 'workspace:noteSave'
 } as const
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels]
 
-/** API проекта (создание/открытие/сохранение). */
+/** Project API (create/open/save). */
 export interface ProjectApi {
-  /** Открывает диалог, создаёт проект. null — пользователь отменил. */
+  /** Opens a dialog and creates a project. null — the user cancelled. */
   create: () => Promise<OpenProjectResult | null>
-  /** Открывает диалог выбора папки проекта. null — пользователь отменил. */
+  /** Opens a project-folder picker. null — the user cancelled. */
   open: () => Promise<OpenProjectResult | null>
-  /** Открывает проект по пути (восстановление последнего, ассоциация файлов). */
+  /** Opens a project by path (last-project restore, file association). */
   openPath: (projectPath: string) => Promise<OpenProjectResult>
-  /** Сохраняет манифест; возвращает обновлённый манифест (с updatedAt). */
+  /** Saves the manifest; returns the updated manifest (with updatedAt). */
   save: (projectPath: string, manifest: ProjectManifest) => Promise<ProjectManifest>
-  /** Слова/символы по всему проекту (сумма по всем документам). */
+  /** Words/characters across the project (sum over all documents). */
   stats: (projectPath: string) => Promise<ProjectStats>
 }
 
-/** API документов (тексты глав/сцен). */
+/** Document API (chapter/scene texts). */
 export interface DocumentApi {
-  /** Содержимое документа или null, если файла ещё нет. */
+  /** Document contents, or null if the file does not exist yet. */
   load: (projectPath: string, nodeId: string) => Promise<DocumentContent | null>
-  /** Сохранить содержимое документа. */
+  /** Save document contents. */
   save: (projectPath: string, nodeId: string, content: DocumentContent) => Promise<void>
 }
 
-/** Результат мутации, создающей новый узел. */
+/** Result of a mutation that creates a new node. */
 export interface CreateNodeResult {
   manifest: ProjectManifest
   nodeId: string
 }
 
-/** API глобальных настроек приложения. */
+/** Global application settings API. */
 export interface SettingsApi {
   get: () => Promise<GlobalSettings>
   set: (settings: GlobalSettings) => Promise<GlobalSettings>
 }
 
-/** API резервного копирования. */
+/** Backup API. */
 export interface BackupApi {
-  /** Сообщить, что проект открыт (снапшот при открытии). */
+  /** Notify that a project was opened (snapshot-on-open). */
   projectOpened: (projectPath: string) => Promise<void>
-  /** Сообщить, что проект закрывается (снапшот при закрытии). */
+  /** Notify that a project is closing (snapshot-on-close). */
   projectClosing: (projectPath: string) => Promise<void>
-  /** Сделать снапшот вручную/по интервалу. */
+  /** Take a snapshot manually / on an interval. */
   snapshot: (projectPath: string, reason: BackupReason) => Promise<BackupInfo>
-  /** Список снапшотов (от новых к старым). */
+  /** List snapshots (newest first). */
   list: (projectPath: string) => Promise<BackupInfo[]>
-  /** Восстановить из снапшота; возвращает восстановленный манифест. */
+  /** Restore from a snapshot; returns the restored manifest. */
   restore: (projectPath: string, id: string) => Promise<ProjectManifest>
-  /** Удалить снапшот. */
+  /** Delete a snapshot. */
   delete: (projectPath: string, id: string) => Promise<void>
 }
 
-/** Нативные диалоги общего назначения. */
+/** General-purpose native dialogs. */
 export interface DialogApi {
-  /** Выбрать папку. null — отмена. */
+  /** Pick a folder. null — cancelled. */
   pickDirectory: () => Promise<string | null>
-  /** Открыть путь (папку/файл) в системе. */
+  /** Open a path (folder/file) in the OS. */
   openPath: (path: string) => Promise<void>
 }
 
-/** API экспорта проекта. */
+/** Project export API. */
 export interface ExportApi {
   run: (projectPath: string, options: ExportOptions) => Promise<ExportResult>
-  /** Подписка на прогресс экспорта. Возвращает функцию отписки. */
+  /** Subscribe to export progress. Returns an unsubscribe function. */
   onProgress: (callback: (progress: ExportProgress) => void) => () => void
 }
 
-/** Системные события приложения. */
+/** System application events. */
 export interface AppEventsApi {
-  /** Запрос ОС открыть проект по пути (ассоциация/аргумент/второй экземпляр). */
+  /** OS request to open a project by path (association/argument/second instance). */
   onOpenProject: (callback: (projectPath: string) => void) => () => void
-  /** Окно закрывается: нужно немедленно записать отложенные автосохранения. */
+  /** Window is closing: pending autosaves must be written immediately. */
   onWillClose: (callback: () => void) => () => void
-  /** Сообщить main, что несохранённое записано — окно можно закрывать. */
+  /** Tell main that unsaved changes are written — the window may close. */
   closeReady: () => Promise<void>
 }
 
-/** Связь редактора с нативным контекстным меню и словарём. */
+/** Editor link to the native context menu and dictionary. */
 export interface EditorApi {
-  /** Подписка на ИИ-действие из контекстного меню. Возвращает функцию отписки. */
+  /** Subscribe to AI actions from the context menu. Returns an unsubscribe function. */
   onAiAction: (callback: (kind: 'rewrite' | 'grammar') => void) => () => void
-  /** Слова пользовательского словаря. */
+  /** Words of the custom dictionary. */
   listDictionary: () => Promise<string[]>
-  /** Добавить слово в словарь. */
+  /** Add a word to the dictionary. */
   addToDictionary: (word: string) => Promise<void>
-  /** Удалить слово из словаря. */
+  /** Remove a word from the dictionary. */
   removeFromDictionary: (word: string) => Promise<void>
-  /** Экспортировать словарь в выбранный файл. true — сохранено, false — отмена. */
+  /** Export the dictionary to a chosen file. true — saved, false — cancelled. */
   exportDictionary: () => Promise<boolean>
-  /** Импортировать слова из выбранного файла. Возвращает обновлённый список. */
+  /** Import words from a chosen file. Returns the updated list. */
   importDictionary: () => Promise<string[]>
 }
 
-/** API ИИ-провайдеров. Ключи живут в main; в renderer не передаются. */
+/** AI provider API. Keys live in main and are never passed to the renderer. */
 export interface AiApi {
-  /** Доступно ли системное безопасное хранилище (для ключей). */
+  /** Whether the system secure storage (for keys) is available. */
   storageAvailable: () => Promise<boolean>
-  /** Задан ли сохранённый ключ для профиля. */
+  /** Whether a stored key exists for the profile. */
   keyStatus: (profileId: string) => Promise<boolean>
-  /** Сохранить/обновить ключ профиля. */
+  /** Save/update the profile key. */
   setKey: (profileId: string, key: string) => Promise<void>
-  /** Удалить ключ профиля. */
+  /** Delete the profile key. */
   deleteKey: (profileId: string) => Promise<void>
-  /** Проверить соединение по введённым параметрам профиля. */
+  /** Test the connection with the entered profile parameters. */
   test: (draft: AiProfileDraft) => Promise<AiTestResult>
-  /** Список моделей провайдера по введённым параметрам. */
+  /** List provider models with the entered parameters. */
   listModels: (draft: AiProfileDraft) => Promise<AiModelInfo[]>
-  /** Запрос чата активным провайдером; ответ стримится через onStream. */
+  /** Chat request to the active provider; the reply streams via onStream. */
   chat: (requestId: string, messages: AiChatMessage[]) => Promise<string>
-  /** Прервать запрос чата по requestId. */
+  /** Abort a chat request by requestId. */
   abort: (requestId: string) => Promise<void>
-  /** Улучшить текст по инструкции (возвращает новый вариант). Отменяется по requestId. */
+  /** Improve text per instruction (returns the new version). Cancellable by requestId. */
   improve: (requestId: string, text: string, instruction: string) => Promise<string>
-  /** Проверить грамматику/стиль (возвращает список правок). Отменяется по requestId. */
+  /** Check grammar/style (returns a list of edits). Cancellable by requestId. */
   grammar: (requestId: string, text: string) => Promise<GrammarEdit[]>
-  /** Подписка на события стриминга чата. Возвращает функцию отписки. */
+  /** Subscribe to chat streaming events. Returns an unsubscribe function. */
   onStream: (callback: (event: AiStreamEvent) => void) => () => void
 }
 
-/** API данных рабочего пространства проекта (история чата, кэш содержаний). */
+/** Project workspace data API (chat history, summaries cache). */
 export interface WorkspaceApi {
   loadChat: (projectPath: string) => Promise<AiChatMessage[]>
   saveChat: (projectPath: string, messages: AiChatMessage[]) => Promise<void>
@@ -278,52 +278,52 @@ export interface WorkspaceApi {
 }
 
 /**
- * API структуры проекта (дерево). Каждая мутация применяется в main поверх
- * доменной модели, сохраняется на диск и возвращает обновлённый манифест.
+ * Project structure (tree) API. Every mutation is applied in main on top of
+ * the domain model, persisted to disk, and returns the updated manifest.
  */
 export interface TreeApi {
-  /** Создать узел внутри parentId (null — корень). */
+  /** Create a node inside parentId (null — root). */
   create: (
     projectPath: string,
     parentId: string | null,
     type: NodeType,
     title: string
   ) => Promise<CreateNodeResult>
-  /** Переименовать узел. */
+  /** Rename a node. */
   rename: (projectPath: string, nodeId: string, title: string) => Promise<ProjectManifest>
-  /** Удалить узел и его поддерево (вместе с файлами содержимого). */
+  /** Remove a node and its subtree (with content files). */
   remove: (projectPath: string, nodeId: string) => Promise<ProjectManifest>
-  /** Переместить узел внутрь newParentId (null — корень) на позицию index. */
+  /** Move a node into newParentId (null — root) at position index. */
   move: (
     projectPath: string,
     nodeId: string,
     newParentId: string | null,
     index: number
   ) => Promise<ProjectManifest>
-  /** Дублировать узел (с поддеревом и копией содержимого). */
+  /** Duplicate a node (with subtree and a copy of contents). */
   duplicate: (projectPath: string, nodeId: string) => Promise<CreateNodeResult>
 }
 
 /**
- * API корзины проекта. Удаление перемещает узлы в корзину (файлы остаются);
- * окончательное стирание файлов происходит лишь при удалении из корзины.
+ * Project trash API. Deletion moves nodes to trash (files remain);
+ * files are actually erased only when deleted from the trash.
  */
 export interface TrashApi {
-  /** Переместить узлы (с поддеревьями) в корзину. */
+  /** Move nodes (with subtrees) to trash. */
   move: (projectPath: string, nodeIds: string[]) => Promise<ProjectManifest>
-  /** Восстановить узел из корзины на исходное место. */
+  /** Restore a node from trash to its original place. */
   restore: (projectPath: string, nodeId: string) => Promise<ProjectManifest>
-  /** Окончательно удалить элемент корзины (вместе с файлами содержимого). */
+  /** Permanently delete a trash item (with its content files). */
   delete: (projectPath: string, nodeId: string) => Promise<ProjectManifest>
-  /** Очистить корзину целиком. */
+  /** Empty the whole trash. */
   empty: (projectPath: string) => Promise<ProjectManifest>
 }
 
 /**
- * Поверхность API, доступная в renderer как `window.api`.
+ * The API surface available in the renderer as `window.api`.
  */
 export interface AppApi {
-  /** Health-check связи с main-процессом. */
+  /** Health check of the link to the main process. */
   ping: () => Promise<string>
   project: ProjectApi
   document: DocumentApi

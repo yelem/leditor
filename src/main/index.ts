@@ -15,13 +15,13 @@ import { registerWorkspaceIpc } from './ipc/workspace'
 import { registerExportIpc } from './ipc/export'
 
 let mainWindow: BrowserWindow | null = null
-// Путь проекта, который нужно открыть, как только renderer будет готов.
+// Project path to open as soon as the renderer is ready.
 let pendingProjectPath: string | null = null
 
-// --- Флаш renderer перед закрытием/выходом ---------------------------------
-// Автосохранение в renderer отложенное (debounce). Перед закрытием окна и
-// перед снапшотом на выходе просим renderer немедленно записать несохранённое
-// и ждём подтверждения (appCloseReady) — иначе последние правки теряются.
+// --- Flushing the renderer before close/quit --------------------------------
+// Autosave in the renderer is debounced. Before closing the window and before
+// the on-quit snapshot we ask the renderer to write unsaved changes immediately
+// and wait for confirmation (appCloseReady) — otherwise the last edits are lost.
 
 let rendererFlushed = false
 let flushWaiters: Array<() => void> = []
@@ -34,8 +34,8 @@ function resolveRendererFlush(): void {
 }
 
 /**
- * Попросить renderer долить несохранённое и дождаться подтверждения.
- * Таймаут-страховка: зависший/не отвечающий renderer не блокирует закрытие.
+ * Ask the renderer to flush unsaved changes and wait for confirmation.
+ * Timeout safety net: a hung/unresponsive renderer must not block closing.
  */
 function flushRendererBeforeExit(timeoutMs = 1500): Promise<void> {
   const win = mainWindow
@@ -49,20 +49,20 @@ function flushRendererBeforeExit(timeoutMs = 1500): Promise<void> {
   })
 }
 
-/** Найти в аргументах командной строки путь к папке *.bookproj. */
+/** Find a *.bookproj folder path among command-line arguments. */
 function extractProjectPath(argv: string[]): string | null {
   for (const arg of argv) {
     if (typeof arg !== 'string' || !arg.toLowerCase().endsWith(PROJECT_EXTENSION)) continue
     try {
       if (statSync(arg).isDirectory()) return arg
     } catch {
-      /* несуществующий путь — пропускаем */
+      /* nonexistent path — skip */
     }
   }
   return null
 }
 
-/** Передать renderer запрос открыть проект (или отложить до готовности окна). */
+/** Pass an open-project request to the renderer (or defer until the window is ready). */
 function requestOpenProject(projectPath: string): void {
   if (mainWindow && !mainWindow.webContents.isLoading()) {
     mainWindow.webContents.send(IpcChannels.appOpenProject, projectPath)
@@ -80,8 +80,8 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     title: 'Leditor',
-    // На Windows нужен многоразмерный .ico (16/24/32/48…): иконка заголовка
-    // окна берётся из подходящего размера без масштабирования.
+    // Windows needs a multi-size .ico (16/24/32/48…): the title-bar icon
+    // is taken from the matching size without scaling.
     icon: join(
       __dirname,
       '../../resources',
@@ -90,7 +90,7 @@ function createWindow(): void {
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
-      // Архитектурный принцип: renderer изолирован от Node и сети.
+      // Architectural principle: the renderer is isolated from Node and the network.
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -99,34 +99,34 @@ function createWindow(): void {
   mainWindow = win
   rendererFlushed = false
 
-  // Перед закрытием окна — флаш несохранённого в renderer, потом закрываем.
+  // Before the window closes — flush unsaved changes in the renderer, then close.
   let flushedBeforeClose = false
   win.on('close', (event) => {
     if (flushedBeforeClose) return
     event.preventDefault()
     void flushRendererBeforeExit().then(() => {
       flushedBeforeClose = true
-      // destroy() закрывает окно, не порождая повторного события close.
+      // destroy() closes the window without emitting another close event.
       if (!win.isDestroyed()) win.destroy()
     })
   })
 
-  // Проверка орфографии (русский + английский, если доступны).
+  // Spell checking (Russian + English when available).
   try {
     const available = win.webContents.session.availableSpellCheckerLanguages
     const wanted = ['ru', 'en-US'].filter((l) => available.includes(l))
     if (wanted.length > 0) win.webContents.session.setSpellCheckerLanguages(wanted)
   } catch {
-    /* спелл-чекер недоступен — не критично */
+    /* spell checker unavailable — not critical */
   }
 
-  // Контекстное меню в редактируемых полях: ИИ-действия (в редакторе),
-  // подсказки орфографии, добавление слова в словарь, правка.
+  // Context menu in editable fields: AI actions (in the editor),
+  // spelling suggestions, add-to-dictionary, clipboard editing.
   win.webContents.on('context-menu', (_event, params) => {
     if (!params.isEditable) return
     const menu = new Menu()
 
-    // ИИ-действия — в прозовом редакторе (contenteditable), не в textarea/input.
+    // AI actions apply to the prose editor (contenteditable), not textarea/input.
     const formControl = (params as { formControlType?: string }).formControlType ?? ''
     const isFormField =
       formControl === 'text-area' ||
@@ -186,7 +186,7 @@ function createWindow(): void {
     mainWindow = null
   })
 
-  // Когда renderer готов — отправляем отложенный запрос на открытие проекта.
+  // Once the renderer is ready — send the deferred open-project request.
   win.webContents.on('did-finish-load', () => {
     if (pendingProjectPath) {
       win.webContents.send(IpcChannels.appOpenProject, pendingProjectPath)
@@ -194,7 +194,7 @@ function createWindow(): void {
     }
   })
 
-  // Внешние ссылки открываем в системном браузере, а не внутри окна.
+  // External links open in the system browser, not inside the window.
   win.webContents.setWindowOpenHandler((details) => {
     void shell.openExternal(details.url)
     return { action: 'deny' }
@@ -207,17 +207,17 @@ function createWindow(): void {
   }
 }
 
-/** Регистрация всех IPC-обработчиков main-процесса. */
+/** Register all main-process IPC handlers. */
 function registerIpcHandlers(): void {
-  // Health-check связи renderer → main.
+  // Renderer → main health check.
   ipcMain.handle(IpcChannels.ping, () => 'pong')
 
-  // Renderer записал несохранённое — можно продолжать закрытие/выход.
+  // The renderer wrote its unsaved changes — closing/quitting may continue.
   ipcMain.handle(IpcChannels.appCloseReady, () => {
     resolveRendererFlush()
   })
 
-  // Пользовательский словарь орфографии.
+  // Custom spelling dictionary.
   ipcMain.handle(IpcChannels.spellListWords, () =>
     session.defaultSession.listWordsInSpellCheckerDictionary()
   )
@@ -264,30 +264,30 @@ function registerIpcHandlers(): void {
     return session.defaultSession.listWordsInSpellCheckerDictionary()
   })
 
-  // Проект и документы.
+  // Project and documents.
   registerProjectIpc(() => mainWindow)
 
-  // Глобальные настройки.
+  // Global settings.
   registerSettingsIpc()
 
-  // Резервное копирование.
+  // Backups.
   registerBackupIpc()
 
-  // Нативные диалоги (выбор папки и т.п.).
+  // Native dialogs (folder picker, etc.).
   registerDialogIpc(() => mainWindow)
 
-  // ИИ-провайдеры.
+  // AI providers.
   registerAiIpc()
 
-  // Данные рабочего пространства: чат, краткие содержания.
+  // Workspace data: chat, chapter summaries.
   registerWorkspaceIpc()
 
-  // Экспорт проекта (Word/FB2/EPUB).
+  // Project export (Word/FB2/EPUB).
   registerExportIpc()
 }
 
-// Один экземпляр приложения: второй запуск (в т.ч. двойной клик по .bookproj)
-// пробрасывает путь в уже открытое окно, а сам закрывается.
+// Single application instance: a second launch (incl. double-clicking a
+// .bookproj) forwards its path to the existing window and exits.
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 if (!gotSingleInstanceLock) {
   app.quit()
@@ -302,7 +302,7 @@ app.on('second-instance', (_event, argv) => {
   }
 })
 
-// macOS: открытие файла/папки проекта через Finder.
+// macOS: opening a project file/folder from Finder.
 app.on('open-file', (event, filePath) => {
   event.preventDefault()
   if (filePath.toLowerCase().endsWith(PROJECT_EXTENSION)) requestOpenProject(filePath)
@@ -313,12 +313,12 @@ app.whenReady().then(() => {
 
   electronApp.setAppUserModelId('com.leditor.app')
 
-  // Прогрев кэша языка для main-строк (меню, диалоги, ошибки).
+  // Warm up the language cache for main-process strings (menus, dialogs, errors).
   void getSettings().catch(() => undefined)
 
   if (process.platform === 'darwin') {
-    // macOS: строка меню обязательна — без неё пропадают стандартные
-    // шорткаты (Cmd+C/V/X/A, Cmd+Q). Системные роли ОС локализует сама.
+    // macOS: the menu bar is mandatory — without it the standard shortcuts
+    // (Cmd+C/V/X/A, Cmd+Q) stop working. The OS localizes system roles itself.
     Menu.setApplicationMenu(
       Menu.buildFromTemplate([
         { role: 'appMenu' },
@@ -328,11 +328,11 @@ app.whenReady().then(() => {
       ])
     )
   } else {
-    // Windows/Linux: убираем стандартное меню Electron (по Alt) — у нас своя навигация.
+    // Windows/Linux: remove the default Electron menu (Alt) — the app has its own navigation.
     Menu.setApplicationMenu(null)
   }
 
-  // Разрешаем доступ к системным шрифтам (Local Font Access API).
+  // Allow access to system fonts (Local Font Access API).
   const allowedPermissions = new Set<string>(['local-fonts', 'clipboard-read'])
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     callback(allowedPermissions.has(permission))
@@ -344,7 +344,7 @@ app.whenReady().then(() => {
 
   registerIpcHandlers()
 
-  // Проект, переданный в аргументах запуска (ассоциация/командная строка).
+  // Project passed via launch arguments (association/command line).
   const startupProject = extractProjectPath(process.argv.slice(1))
   if (startupProject) pendingProjectPath = startupProject
 
@@ -363,17 +363,17 @@ app.on('window-all-closed', () => {
   }
 })
 
-// Снапшот текущего проекта перед выходом (если включено в настройках).
+// Snapshot of the current project before quitting (if enabled in settings).
 let quitHandled = false
 app.on('before-quit', (event) => {
   if (quitHandled) return
   event.preventDefault()
   quitHandled = true
-  // Сразу отдаём single-instance lock: пока пишется снапшот при закрытии,
-  // повторный запуск не должен утыкаться в занятый лок и молча завершаться.
+  // Release the single-instance lock right away: while the on-close snapshot
+  // is being written, a relaunch must not hit the held lock and silently exit.
   app.releaseSingleInstanceLock()
-  // Сначала флаш несохранённого в renderer, потом снапшот — иначе снапшот
-  // при выходе фотографирует устаревшее (недосохранённое) состояние.
+  // First flush unsaved changes in the renderer, then snapshot — otherwise
+  // the on-quit snapshot captures stale (not-yet-saved) state.
   void flushRendererBeforeExit()
     .then(() => snapshotOnQuitIfNeeded())
     .finally(() => app.quit())

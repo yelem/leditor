@@ -55,7 +55,7 @@
   border-left: 1px solid var(--border);
 }
 
-/* Заголовок боковой панели (общий для дерева и чата). */
+/* Side-panel header (shared by the tree and the chat). */
 .panel__header {
   display: flex;
   align-items: center;
@@ -99,7 +99,7 @@
   display: block;
 }
 
-/* Разделитель-перетаскиватель. */
+/* Draggable divider. */
 .resizer {
   flex: 0 0 6px;
   width: 6px;

@@ -1,15 +1,16 @@
 /**
- * Локализация интерфейса. Базовый язык — английский; ru/uk обязаны покрывать
- * все ключи (контролируется типом). Словари общие для main и renderer:
- * renderer берёт язык из React-контекста настроек, main — из кэша настроек.
+ * Interface localization. The base language is English; ru/uk must cover all
+ * keys (enforced by the type). Dictionaries are shared by main and renderer:
+ * the renderer takes the language from the settings React context, main from
+ * the settings cache.
  *
- * Подстановки: `{name}` в строке заменяется значением vars.name.
+ * Placeholders: `{name}` in a string is replaced with vars.name.
  */
 
 import type { UiLanguage } from '../settings-types'
 
 export const en = {
-  // --- Общие кнопки/слова ---
+  // --- Common buttons/words ---
   'common.close': 'Close',
   'common.cancel': 'Cancel',
   'common.ok': 'OK',
@@ -19,7 +20,7 @@ export const en = {
   'common.increase': 'Increase',
   'common.decrease': 'Decrease',
 
-  // --- Верхняя панель ---
+  // --- Top toolbar ---
   'toolbar.project': 'Project',
   'toolbar.showLeft': 'Show project panel',
   'toolbar.hideLeft': 'Hide project panel',
@@ -35,7 +36,7 @@ export const en = {
   'toolbar.badgeNoProject': 'no project open',
   'toolbar.settings': 'App settings',
 
-  // --- Дерево проекта ---
+  // --- Project tree ---
   'tree.panelTitle': 'Project',
   'tree.newDocRoot': 'New document at root',
   'tree.newFolderRoot': 'New folder at root',
@@ -61,7 +62,7 @@ export const en = {
     'Empty the trash? All items will be permanently deleted along with their text.',
   'tree.deleteForeverConfirm': 'Delete “{title}” forever? Its text will be erased permanently.',
 
-  // --- Редактор ---
+  // --- Editor ---
   'editor.placeholder': 'Start writing…',
   'editor.statusSaving': 'saving…',
   'editor.statusSaved': 'saved',
@@ -83,7 +84,7 @@ export const en = {
   'editor.rewriteReason': 'rephrasing',
   'editor.editReason': 'edit',
 
-  // --- Панель форматирования ---
+  // --- Formatting toolbar ---
   'fmt.undo': 'Undo (Ctrl+Z)',
   'fmt.redo': 'Redo (Ctrl+Y)',
   'fmt.paragraphStyle': 'Paragraph style',
@@ -113,7 +114,7 @@ export const en = {
   'fmt.view': 'View',
   'fmt.viewTitle': 'View: font, size, width',
 
-  // --- Поиск и замена ---
+  // --- Find & replace ---
   'find.placeholder': 'Find',
   'find.replacePlaceholder': 'Replace with',
   'find.none': 'none',
@@ -124,14 +125,14 @@ export const en = {
   'find.replace': 'Replace',
   'find.replaceAll': 'All',
 
-  // --- Поповер «Вид» ---
+  // --- View popover ---
   'appearance.font': 'Font',
   'appearance.fontSize': 'Font size',
   'appearance.lineHeight': 'Line spacing',
   'appearance.width': 'Page width',
   'appearance.typewriter': 'Typewriter mode',
 
-  // --- Обзор предложенных правок ---
+  // --- Suggested edits review ---
   'sg.count': 'Suggested edits: {n}',
   'sg.acceptAll': 'Accept all',
   'sg.rejectAll': 'Reject all',
@@ -139,19 +140,19 @@ export const en = {
   'sg.accept': 'Accept',
   'sg.reject': 'Reject',
 
-  // --- Заметки ---
+  // --- Notes ---
   'notes.placeholder': 'Notes for this chapter…',
   'notes.pickChapter': 'Select a chapter to keep notes on it.',
   'notes.title': 'Notes: {title}',
   'notes.chapter': 'chapter',
 
-  // --- Правая панель ---
+  // --- Right panel ---
   'rpanel.assistant': 'Assistant',
   'rpanel.notes': 'Notes',
   'rpanel.activeProfile': 'Active AI profile',
   'rpanel.aiNotConfigured': 'AI not configured',
 
-  // --- Чат ---
+  // --- Chat ---
   'chat.contextTitle': 'Model context',
   'chat.ctxSizeTitle': 'Size of the context sent to the model',
   'chat.ctxChars': '~{n} chars',
@@ -171,7 +172,7 @@ export const en = {
   'chat.send': 'Send',
   'chat.error': '⚠ Error: {msg}',
 
-  // --- Настройки ---
+  // --- Settings ---
   'settings.title': 'Settings',
   'settings.tabAppearance': 'Appearance',
   'settings.tabTypography': 'Typography',
@@ -216,7 +217,7 @@ export const en = {
   'settings.autoSaved': 'Changes are saved automatically',
   'settings.done': 'Done',
 
-  // --- Настройки ИИ ---
+  // --- AI settings ---
   'ai.heading': 'AI providers',
   'ai.note':
     'Multiple profiles with quick switching. The active one is used in chat and text actions. Keys are stored encrypted and never leave the app.',
@@ -251,7 +252,7 @@ export const en = {
   'ai.presetLocal': 'local',
   'ai.presetCustom': 'Custom (OpenAI-compatible)',
 
-  // --- Резервные копии ---
+  // --- Backups ---
   'backups.title': 'Backups',
   'backups.loading': 'Loading…',
   'backups.empty':
@@ -270,7 +271,7 @@ export const en = {
   'backups.reasonManual': 'manual',
   'backups.reasonPreRestore': 'before restore',
 
-  // --- Экспорт ---
+  // --- Export ---
   'export.title': 'Export',
   'export.format': 'Format',
   'export.docxHint': 'Microsoft Word / LibreOffice',
@@ -290,7 +291,7 @@ export const en = {
   'export.run': 'Export',
   'export.running': 'Exporting…',
 
-  // --- Орфография ---
+  // --- Spelling ---
   'spell.heading': 'Custom dictionary',
   'spell.note': 'Words you marked as “not a mistake”. Add new ones or remove accidental entries.',
   'spell.addPlaceholder': 'Add a word…',
@@ -300,12 +301,12 @@ export const en = {
   'spell.empty': 'The dictionary is empty.',
   'spell.removeWord': 'Remove from dictionary',
 
-  // --- Сведённый просмотр ---
+  // --- Combined view ---
   'combined.title': 'Combined view · {title}',
   'combined.close': '✕ Close view',
   'combined.empty': 'No chapters to display.',
 
-  // --- Шрифты ---
+  // --- Fonts ---
   'fonts.georgiaSerif': 'Georgia (serif)',
   'fonts.ptSerif': 'PT Serif',
   'fonts.systemSans': 'System (sans-serif)',
@@ -313,11 +314,11 @@ export const en = {
   'fonts.recommended': 'Recommended',
   'fonts.system': 'System',
 
-  // --- Каркас окна ---
+  // --- Window shell ---
   'app.resizeLeft': 'Resize project panel',
   'app.resizeRight': 'Resize chat panel',
 
-  // --- Main-процесс: меню, диалоги, ошибки ---
+  // --- Main process: menus, dialogs, errors ---
   'main.menuCheckErrors': '✓ Check for errors',
   'main.menuRewrite': '↻ Rewrite',
   'main.menuAddToDict': 'Add to dictionary',
@@ -1010,14 +1011,14 @@ const ru: Record<TranslationKey, string> = {
 
 const DICTS: Record<UiLanguage, Record<TranslationKey, string>> = { en, uk, ru }
 
-/** Название языка для переключателя (всегда на самом языке). */
+/** Language name for the switcher (always in its own language). */
 export const LANGUAGE_LABELS: Record<UiLanguage, string> = {
   en: 'English',
   uk: 'Українська',
   ru: 'Русский'
 }
 
-/** Локаль для форматирования дат/чисел. */
+/** Locale for date/number formatting. */
 export const LANGUAGE_LOCALES: Record<UiLanguage, string> = {
   en: 'en-US',
   uk: 'uk-UA',

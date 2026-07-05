@@ -1,29 +1,29 @@
 /**
- * Типы ИИ-слоя.
+ * AI layer types.
  *
- * Поддерживаются два вида провайдера за единым интерфейсом:
- *  - 'anthropic'  — Claude через официальный @anthropic-ai/sdk;
- *  - 'openai'     — любой OpenAI-совместимый эндпоинт (LM Studio, Ollama,
- *                   OpenAI, DeepSeek, Gemini-OpenAI и т.д.) по baseUrl.
+ * Two provider kinds behind a single interface:
+ *  - 'anthropic'  — Claude via the official @anthropic-ai/sdk;
+ *  - 'openai'     — any OpenAI-compatible endpoint (LM Studio, Ollama,
+ *                   OpenAI, DeepSeek, Gemini-OpenAI, etc.) by baseUrl.
  *
- * Профили хранятся в глобальных настройках (без ключей). Ключи лежат отдельно,
- * зашифрованные через Electron safeStorage, и в renderer не попадают.
+ * Profiles are stored in global settings (without keys). Keys live separately,
+ * encrypted via Electron safeStorage, and never reach the renderer.
  */
 
 export type AiProviderKind = 'anthropic' | 'openai'
 
-/** Сохранённый профиль подключения (без ключа). */
+/** Saved connection profile (without the key). */
 export interface AiProfile {
   id: string
   name: string
   kind: AiProviderKind
-  /** База OpenAI-совместимого API (для kind='openai'). Для anthropic игнорируется. */
+  /** OpenAI-compatible API base (for kind='openai'). Ignored for anthropic. */
   baseUrl: string
-  /** Идентификатор модели. */
+  /** Model identifier. */
   model: string
 }
 
-/** Набор профилей и активный. */
+/** The set of profiles and the active one. */
 export interface AiSettings {
   activeProfileId: string | null
   profiles: AiProfile[]
@@ -34,7 +34,7 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   profiles: []
 }
 
-/** Роль сообщения в диалоге. */
+/** Message role in the conversation. */
 export type AiRole = 'system' | 'user' | 'assistant'
 
 export interface AiChatMessage {
@@ -42,40 +42,40 @@ export interface AiChatMessage {
   content: string
 }
 
-/** Одна правка грамматики/стиля (под Google-Docs-подобный обзор на этапе 8). */
+/** One grammar/style edit (rendered as a reviewable tracked suggestion). */
 export interface GrammarEdit {
   original: string
   suggestion: string
   reason: string
 }
 
-/** Результат проверки соединения с провайдером. */
+/** Result of testing the provider connection. */
 export interface AiTestResult {
   ok: boolean
-  /** Короткий ответ модели при успехе. */
+  /** Short model reply on success. */
   reply?: string
-  /** Сообщение об ошибке при неудаче. */
+  /** Error message on failure. */
   error?: string
 }
 
-/** Событие стриминга чата (main → renderer). */
+/** Chat streaming event (main → renderer). */
 export type AiStreamEvent =
   | { type: 'delta'; requestId: string; text: string }
   | { type: 'done'; requestId: string }
   | { type: 'error'; requestId: string; error: string }
 
-/** Модель API по данным провайдера (для выбора из списка). */
+/** API model as reported by the provider (for list selection). */
 export interface AiModelInfo {
   id: string
 }
 
-/** Черновик профиля для проверки/получения моделей до сохранения ключа. */
+/** Profile draft for testing/listing models before the key is saved. */
 export interface AiProfileDraft {
   kind: AiProviderKind
   baseUrl: string
   model: string
-  /** Ключ передаётся напрямую (если введён в форме). */
+  /** Key passed directly (if entered in the form). */
   apiKey?: string
-  /** Если ключ не введён — взять сохранённый ключ этого профиля. */
+  /** If no key entered — use the stored key of this profile. */
   profileId?: string
 }

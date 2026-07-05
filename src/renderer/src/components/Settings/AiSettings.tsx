@@ -39,7 +39,7 @@ export function AiSettingsSection(): JSX.Element {
     const profiles = exists
       ? ai.profiles.map((p) => (p.id === profile.id ? profile : p))
       : [...ai.profiles, profile]
-    // Первый добавленный профиль автоматически становится активным.
+    // The first added profile automatically becomes active.
     const activeProfileId = ai.activeProfileId ?? profile.id
     patch({ ai: { activeProfileId, profiles } })
     if (key !== null) void window.api.ai.setKey(profile.id, key).catch(() => undefined)

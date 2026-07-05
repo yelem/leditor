@@ -1,8 +1,9 @@
 /**
- * IPC-обработчики операций с проектом и документами.
+ * IPC handlers for project and document operations.
  *
- * Слой приёма команд: валидирует ввод, вызывает диалоги и сервис хранения,
- * применяет доменную модель. Бизнес-логика и доступ к диску — в services/domain.
+ * The command-intake layer: validates input, shows dialogs, calls the storage
+ * service and applies the domain model. Business logic and disk access live
+ * in services/domain.
  */
 
 import { app, dialog, ipcMain, type BrowserWindow } from 'electron'
@@ -49,7 +50,7 @@ import {
 import { withLock } from '../services/lock'
 import { tMain } from '../i18n'
 
-/** Гарантирует расширение .bookproj у пути и выводит заголовок проекта. */
+/** Ensures the .bookproj extension on the path and derives the project title. */
 function normalizeProjectPath(rawPath: string): { projectPath: string; title: string } {
   const projectPath = rawPath.endsWith(PROJECT_EXTENSION)
     ? rawPath
@@ -151,8 +152,8 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
     }
   )
 
-  // --- Мутации дерева: читаем манифест с диска, применяем доменную функцию,
-  // сохраняем, синхронизируем файлы содержимого, возвращаем новый манифест. ---
+  // --- Tree mutations: read the manifest from disk, apply the domain function,
+  // save, sync content files, return the new manifest. ---
 
   ipcMain.handle(
     IpcChannels.treeCreate,
@@ -193,7 +194,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
         const { tree, removed } = removeNode(manifest.tree, nodeId)
         const saved = await writeManifest(projectPath, { ...manifest, tree })
         if (removed) {
-          // Удаляем содержимое и заметки всех документов удалённого поддерева.
+          // Delete contents and notes of every document in the removed subtree.
           for (const docId of collectDocumentIds([removed])) {
             await deleteDocument(projectPath, docId)
             await deleteNote(projectPath, docId)
@@ -234,7 +235,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
         const tree = insertNode(manifest.tree, copy, loc.parentId, loc.index + 1)
         const saved = await writeManifest(projectPath, { ...manifest, tree })
 
-        // Копируем содержимое каждого документа из оригинала в копию.
+        // Copy each document's contents from the original to the duplicate.
         for (const [fromId, toId] of pairDocumentIds(original, copy)) {
           const content = (await readDocument(projectPath, fromId)) ?? createEmptyDocument()
           await writeDocument(projectPath, toId, content)
@@ -243,9 +244,9 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
       })
   )
 
-  // --- Корзина ---
+  // --- Trash ---
 
-  // Удалить файлы содержимого и заметок всех документов поддеревьев.
+  // Delete content and note files of all documents in the subtrees.
   const eraseSubtrees = async (projectPath: string, roots: TreeNode[]): Promise<void> => {
     for (const docId of collectDocumentIds(roots)) {
       await deleteDocument(projectPath, docId)
@@ -258,7 +259,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
     async (_event, projectPath: string, nodeIds: string[]): Promise<ProjectManifest> =>
       withLock(projectPath, async () => {
         const manifest = await readManifest(projectPath)
-        // Файлы НЕ трогаем — они нужны для восстановления.
+        // Files are NOT touched — they are needed for restoration.
         return writeManifest(projectPath, trashNodes(manifest, nodeIds))
       })
   )

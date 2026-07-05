@@ -1,7 +1,7 @@
 /**
- * Конвертеры ProseMirror-документа в форматы экспорта: DOCX, FB2, EPUB.
- * Покрывают обычную прозу: абзацы, заголовки, списки, цитаты, разрыв сцены,
- * жирный/курсив/подчёркнутый/зачёркнутый/код/ссылки.
+ * ProseMirror-document converters for the export formats: DOCX, FB2, EPUB.
+ * Cover ordinary prose: paragraphs, headings, lists, quotes, scene breaks,
+ * bold/italic/underline/strikethrough/code/links.
  */
 
 import { randomUUID } from 'node:crypto'
@@ -40,7 +40,7 @@ interface Run {
 const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const escAttr = (s: string): string => esc(s).replace(/"/g, '&quot;')
 
-/** Извлечь inline-фрагменты из содержимого блока. */
+/** Extract inline fragments from block content. */
 function inlineRuns(nodes?: ProseMirrorNode[]): Run[] {
   const runs: Run[] = []
   const walk = (ns: ProseMirrorNode[]): void => {
@@ -59,7 +59,7 @@ function inlineRuns(nodes?: ProseMirrorNode[]): Run[] {
           else if (m.type === 'strike') run.strike = true
           else if (m.type === 'code') run.code = true
           else if (m.type === 'link') run.href = m.attrs?.href as string
-          else if (m.type === 'deletion') dropped = true // предложенные удаления не экспортируем
+          else if (m.type === 'deletion') dropped = true // suggested deletions are not exported
         }
         if (!dropped && run.text) runs.push(run)
       }
@@ -76,7 +76,7 @@ const headingLevel = (n: ProseMirrorNode): number =>
 const codeText = (n: ProseMirrorNode): string =>
   (n.content ?? []).map((c) => c.text ?? '').join('')
 
-// ---------- XHTML (для EPUB) ----------
+// ---------- XHTML (for EPUB) ----------
 
 function xhtmlInline(runs: Run[]): string {
   return runs
@@ -246,7 +246,7 @@ function blockToDocx(node: ProseMirrorNode): Paragraph[] {
       return [new Paragraph({ children: runsToDocx(inlineRuns(node.content)) })]
     case 'blockquote':
       return (node.content ?? []).flatMap(blockToDocx).map(
-        (p) => p // оставляем как есть (без спец-стиля цитаты для простоты)
+        (p) => p // left as is (no special quote style, for simplicity)
       )
     case 'bulletList':
       return (node.content ?? []).flatMap((li) =>

@@ -1,6 +1,6 @@
 /**
- * Доступ к системным шрифтам через Local Font Access API.
- * Вызывать по жесту пользователя (фокус/клик), иначе API может отклонить запрос.
+ * Access to system fonts via the Local Font Access API.
+ * Call on a user gesture (focus/click), otherwise the API may reject the request.
  */
 
 interface FontData {

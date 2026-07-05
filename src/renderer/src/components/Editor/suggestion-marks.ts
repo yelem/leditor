@@ -1,10 +1,10 @@
 import { Mark, mergeAttributes } from '@tiptap/core'
 
 /**
- * Марки предложенных правок (режим рецензирования):
- *  - insertion — предложенная вставка (подчёркнуто зелёным);
- *  - deletion  — предложенное удаление (зачёркнуто красным).
- * Атрибут sid связывает обе части одной правки.
+ * Suggested-edit marks (review mode):
+ *  - insertion — a suggested insertion (underlined green);
+ *  - deletion  — a suggested deletion (struck through red).
+ * The sid attribute links both parts of one edit.
  */
 
 export const InsertionMark = Mark.create({

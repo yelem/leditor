@@ -30,7 +30,7 @@ export function ExportDialog({ onClose }: { onClose: () => void }): JSX.Element 
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // Подписка на прогресс экспорта.
+  // Subscribe to export progress.
   useEffect(() => window.api.export.onProgress(setProgress), [])
 
   const pickDir = async (): Promise<void> => {

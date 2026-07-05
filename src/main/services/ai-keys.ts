@@ -1,9 +1,9 @@
 /**
- * Безопасное хранилище API-ключей ИИ.
+ * Secure storage for AI API keys.
  *
- * Ключи шифруются Electron safeStorage (системное хранилище ОС) и лежат в
- * userData/ai-keys.bin как зашифрованный JSON-объект { profileId: key }.
- * Ключи существуют только в main; в renderer не передаются.
+ * Keys are encrypted with Electron safeStorage (the OS keychain) and stored
+ * in userData/ai-keys.bin as an encrypted JSON object { profileId: key }.
+ * Keys exist only in main and are never passed to the renderer.
  */
 
 import { app, safeStorage } from 'electron'
@@ -28,7 +28,7 @@ async function readAll(): Promise<Record<string, string>> {
 
 async function writeAll(map: Record<string, string>): Promise<void> {
   const encrypted = safeStorage.encryptString(JSON.stringify(map))
-  // Атомарно: сбой посреди прямой записи испортил бы все ключи разом.
+  // Atomic: a crash mid-write of a direct write would corrupt all keys at once.
   const target = keysFilePath()
   const tmp = `${target}.tmp`
   await fs.writeFile(tmp, encrypted)

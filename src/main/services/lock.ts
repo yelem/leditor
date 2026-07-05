@@ -1,10 +1,10 @@
 /**
- * Последовательное выполнение операций над одним ресурсом (по ключу).
+ * Sequential execution of operations on one resource (by key).
  *
- * Обработчики IPC асинхронны и могут перемежаться на await; операции
- * «прочитал манифест → изменил → записал» без сериализации теряют изменения
- * друг друга. Все мутации проекта и операции бэкапа берут блокировку по
- * пути проекта.
+ * IPC handlers are async and can interleave at awaits; read-modify-write
+ * manifest operations lose each other's changes without serialization.
+ * All project mutations and backup operations take the lock keyed by the
+ * project path.
  */
 
 const tails = new Map<string, Promise<void>>()
@@ -17,7 +17,7 @@ export function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
     () => undefined
   )
   tails.set(key, next)
-  // Не даём карте расти бесконечно: если хвост не сменился — очередь пуста.
+  // Keep the map from growing forever: if the tail is unchanged, the queue is empty.
   void next.then(() => {
     if (tails.get(key) === next) tails.delete(key)
   })

@@ -1,11 +1,11 @@
 import type { TreeNode } from '@shared/project-types'
 
 /**
- * Лёгкие read-only обходы дерева для renderer.
- * Мутации дерева делаются в main (доменный слой) и приходят готовым манифестом.
+ * Lightweight read-only tree traversals for the renderer.
+ * Tree mutations happen in main (domain layer) and arrive as a ready manifest.
  */
 
-/** Найти узел по id. */
+/** Find a node by id. */
 export function findNode(tree: TreeNode[], id: string): TreeNode | null {
   for (const node of tree) {
     if (node.id === id) return node
@@ -15,21 +15,21 @@ export function findNode(tree: TreeNode[], id: string): TreeNode | null {
   return null
 }
 
-/** Заголовок узла по id (или null). */
+/** Node title by id (or null). */
 export function findNodeTitle(tree: TreeNode[], id: string): string | null {
   return findNode(tree, id)?.title ?? null
 }
 
 export interface TreeIndex {
-  /** id родителя (null — корень) для каждого узла. */
+  /** Parent id (null — root) for every node. */
   parentOf: Map<string, string | null>
-  /** индекс узла среди соседей. */
+  /** Node index among its siblings. */
   indexOf: Map<string, number>
-  /** сам узел по id. */
+  /** The node itself by id. */
   nodeOf: Map<string, TreeNode>
 }
 
-/** Построить индексы дерева для быстрых вычислений при DnD/контекстном меню. */
+/** Build tree indexes for fast lookups during DnD/context menus. */
 export function indexTree(tree: TreeNode[]): TreeIndex {
   const parentOf = new Map<string, string | null>()
   const indexOf = new Map<string, number>()
@@ -48,7 +48,7 @@ export function indexTree(tree: TreeNode[]): TreeIndex {
   return { parentOf, indexOf, nodeOf }
 }
 
-/** Собрать все документы дерева как {id, title} в порядке обхода. */
+/** Collect all tree documents as {id, title} in traversal order. */
 export function collectDocuments(tree: TreeNode[]): Array<{ id: string; title: string }> {
   const out: Array<{ id: string; title: string }> = []
   const walk = (nodes: TreeNode[]): void => {
@@ -61,7 +61,7 @@ export function collectDocuments(tree: TreeNode[]): Array<{ id: string; title: s
   return out
 }
 
-/** Является ли `nodeId` потомком (или самим) `ancestorId`. */
+/** Whether `nodeId` is a descendant of (or the same as) `ancestorId`. */
 export function isDescendant(tree: TreeNode[], ancestorId: string, nodeId: string): boolean {
   if (ancestorId === nodeId) return true
   const ancestor = findNode(tree, ancestorId)

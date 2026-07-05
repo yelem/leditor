@@ -9,7 +9,7 @@ import { Resizer } from './Resizer'
 import { useT } from '@renderer/lib/i18n'
 import './layout.css'
 
-/** Каркас приложения: тулбар сверху + три рабочие панели. */
+/** Application shell: toolbar on top + three working panels. */
 export function AppLayout(): JSX.Element {
   const t = useT()
   const {
@@ -26,7 +26,7 @@ export function AppLayout(): JSX.Element {
   const { settings } = useSettings()
   const backupInterval = settings.backup.intervalMinutes
 
-  // Выход из фокус-режима по Escape.
+  // Exit focus mode with Escape.
   useEffect(() => {
     if (!focusMode) return
     const onKey = (e: KeyboardEvent): void => {
@@ -36,7 +36,7 @@ export function AppLayout(): JSX.Element {
     return () => window.removeEventListener('keydown', onKey)
   }, [focusMode, setFocus])
 
-  // Перетаскивание папки *.bookproj в окно — открыть проект.
+  // Dragging a *.bookproj folder onto the window opens the project.
   useEffect(() => {
     const onDragOver = (e: DragEvent): void => {
       if (e.dataTransfer?.types?.includes('Files')) e.preventDefault()
@@ -58,7 +58,7 @@ export function AppLayout(): JSX.Element {
     }
   }, [openProjectByPath])
 
-  // Автоснапшот по интервалу, пока проект открыт.
+  // Interval auto-snapshot while a project is open.
   useEffect(() => {
     if (!projectPath || backupInterval <= 0) return
     const id = setInterval(

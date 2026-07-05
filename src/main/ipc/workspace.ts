@@ -1,6 +1,5 @@
 /**
- * IPC данных рабочего пространства проекта: история чата и кэш кратких
- * содержаний глав.
+ * Project workspace data IPC: chat history and the chapter-summaries cache.
  */
 
 import { ipcMain } from 'electron'

@@ -38,7 +38,7 @@ export function FileTree(): JSX.Element {
   const [dropTarget, setDropTarget] = useState<{ id: string; pos: DropPos } | null>(null)
   const [confirmIds, setConfirmIds] = useState<string[] | null>(null)
   const [confirmPermanent, setConfirmPermanent] = useState<PermanentTarget | null>(null)
-  // Мультивыделение: набор выбранных узлов + «якорь» для диапазона Shift-клика.
+  // Multi-selection: the set of selected nodes + an anchor for Shift-click ranges.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [anchorId, setAnchorId] = useState<string | null>(null)
   const [trashOpen, setTrashOpen] = useState(false)
@@ -46,7 +46,7 @@ export function FileTree(): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
 
-  // Плоский порядок видимых (не свёрнутых) узлов — для диапазонного выделения.
+  // Flat order of visible (non-collapsed) nodes — for range selection.
   const visibleOrder = useMemo(() => {
     const out: string[] = []
     const walk = (nodes: TreeNode[]): void => {
@@ -59,7 +59,7 @@ export function FileTree(): JSX.Element {
     return out
   }, [tree, collapsed])
 
-  // Фокус и выделение текста при входе в режим переименования.
+  // Focus and select the text when entering rename mode.
   useEffect(() => {
     if (editingId) {
       inputRef.current?.focus()
@@ -67,7 +67,7 @@ export function FileTree(): JSX.Element {
     }
   }, [editingId])
 
-  // Выделение следует за открытым документом (восстановление, переключение).
+  // Selection follows the open document (restore, switching).
   useEffect(() => {
     if (activeDocId) {
       setSelectedIds(new Set([activeDocId]))
@@ -75,7 +75,7 @@ export function FileTree(): JSX.Element {
     }
   }, [activeDocId])
 
-  // Закрытие контекстного меню по клику вне его / Escape.
+  // Close the context menu on outside click / Escape.
   useEffect(() => {
     if (!menu) return
     const close = (): void => setMenu(null)
@@ -105,7 +105,7 @@ export function FileTree(): JSX.Element {
       return next
     })
 
-  // --- Выделение ---
+  // --- Selection ---
   const selectOnly = (id: string): void => {
     setSelectedIds(new Set([id]))
     setAnchorId(id)
@@ -133,7 +133,7 @@ export function FileTree(): JSX.Element {
     setSelectedIds(new Set(visibleOrder.slice(lo, hi + 1)))
   }
 
-  // --- Переименование ---
+  // --- Renaming ---
   const beginRename = (node: TreeNode): void => {
     setMenu(null)
     setEditingId(node.id)
@@ -149,7 +149,7 @@ export function FileTree(): JSX.Element {
   }
   const cancelRename = (): void => setEditingId(null)
 
-  // --- Создание / удаление / дублирование ---
+  // --- Create / delete / duplicate ---
   const handleCreate = async (parentId: string | null, type: NodeType): Promise<void> => {
     setMenu(null)
     if (parentId) expand(parentId)
@@ -159,7 +159,7 @@ export function FileTree(): JSX.Element {
       setEditValue(type === 'folder' ? t('tree.newFolder') : t('tree.newDocument'))
     }
   }
-  // Удаление учитывает мультивыделение: если узел входит в выделение из >1 — удаляем все.
+  // Deletion honors multi-selection: if the node is in a selection of >1, delete all.
   const requestDelete = (nodeId: string): void => {
     setMenu(null)
     const targets = selectedIds.has(nodeId) && selectedIds.size > 1 ? [...selectedIds] : [nodeId]
@@ -181,11 +181,11 @@ export function FileTree(): JSX.Element {
       return
     }
     selectOnly(node.id)
-    // Папки сворачиваются только по значку ▸/▾ (см. tree__twisty), не по всей строке.
+    // Folders collapse only via the ▸/▾ twisty (see tree__twisty), not the whole row.
     if (node.type === 'document') selectDocument(node.id)
   }
 
-  // Горячие клавиши дерева (когда панель в фокусе).
+  // Tree hotkeys (when the panel is focused).
   const onTreeKeyDown = (e: React.KeyboardEvent): void => {
     if (!manifest) return
     const primaryId = anchorId ?? [...selectedIds][0] ?? null
@@ -198,7 +198,7 @@ export function FileTree(): JSX.Element {
       e.preventDefault()
       setConfirmIds([...selectedIds])
     } else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyN') {
-      // e.code, а не e.key — независимо от раскладки клавиатуры (рус/eng).
+      // e.code, not e.key — independent of the keyboard layout.
       e.preventDefault()
       const type: NodeType = e.shiftKey ? 'folder' : 'document'
       let parentId: string | null = null
@@ -207,7 +207,7 @@ export function FileTree(): JSX.Element {
     }
   }
 
-  // --- Drag & Drop (одиночный узел) ---
+  // --- Drag & drop (single node) ---
   const clearDrag = (): void => {
     setDragId(null)
     setDropTarget(null)
@@ -255,7 +255,7 @@ export function FileTree(): JSX.Element {
     }
     void moveTreeNode(draggedId, parentId, index)
   }
-  // Сброс на пустую область панели — в конец корня.
+  // Drop on the empty panel area — append to the root.
   const onRootDrop = (e: React.DragEvent): void => {
     e.preventDefault()
     const draggedId = dragId
@@ -382,7 +382,7 @@ export function FileTree(): JSX.Element {
         <div className="tree__empty">{t('tree.notOpen')}</div>
       )}
 
-      {/* Корзина: удалённые узлы, доступные для восстановления. */}
+      {/* Trash: deleted nodes available for restoration. */}
       {manifest && (
         <div className="trash">
           <button

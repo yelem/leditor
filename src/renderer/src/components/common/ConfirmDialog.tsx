@@ -12,7 +12,7 @@ interface ConfirmDialogProps {
   onCancel: () => void
 }
 
-/** Модальное окно подтверждения в стиле приложения (замена window.confirm). */
+/** App-styled confirmation modal (replacement for window.confirm). */
 export function ConfirmDialog({
   title,
   message,

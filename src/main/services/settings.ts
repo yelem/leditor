@@ -1,6 +1,6 @@
 /**
- * Сервис глобальных настроек приложения.
- * Чтение/запись в app.getPath('userData')/settings.json (атомарно).
+ * Global application settings service.
+ * Reads/writes app.getPath('userData')/settings.json (atomically).
  */
 
 import { app } from 'electron'
@@ -34,14 +34,14 @@ function str(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.length > 0 ? value : fallback
 }
 
-/** Нормализовать набор ИИ-профилей (без ключей). */
+/** Normalize the set of AI profiles (no keys). */
 function normalizeAi(raw: Partial<AiSettings> | undefined): AiSettings {
   const profilesIn = Array.isArray(raw?.profiles) ? raw.profiles : []
   const profiles: AiProfile[] = profilesIn
     .filter((p): p is AiProfile => typeof p?.id === 'string')
     .map((p) => ({
       id: p.id,
-      name: str(p.name, 'Профиль'),
+      name: str(p.name, 'Profile'),
       kind: p.kind === 'anthropic' ? 'anthropic' : 'openai',
       baseUrl: typeof p.baseUrl === 'string' ? p.baseUrl : '',
       model: typeof p.model === 'string' ? p.model : ''
@@ -51,7 +51,7 @@ function normalizeAi(raw: Partial<AiSettings> | undefined): AiSettings {
   return { activeProfileId: active, profiles }
 }
 
-/** Нормализовать настройки типографики. */
+/** Normalize typography settings. */
 function normalizeTypography(raw: Partial<TypographySettings> | undefined): TypographySettings {
   const d = DEFAULT_TYPOGRAPHY_SETTINGS
   const quotes =
@@ -65,7 +65,7 @@ function normalizeTypography(raw: Partial<TypographySettings> | undefined): Typo
   }
 }
 
-/** Слить произвольный объект с дефолтами, отбросив некорректные/лишние поля. */
+/** Merge an arbitrary object with defaults, dropping invalid/extra fields. */
 function normalize(raw: Partial<GlobalSettings> | undefined): GlobalSettings {
   const d = DEFAULT_GLOBAL_SETTINGS
   const inDefaults = (raw?.defaults ?? {}) as Partial<ProjectSettings>
@@ -98,7 +98,7 @@ function normalize(raw: Partial<GlobalSettings> | undefined): GlobalSettings {
   }
 }
 
-/** Прочитать глобальные настройки (или дефолты, если файла нет/повреждён). */
+/** Read global settings (or defaults if the file is missing/corrupted). */
 export async function getSettings(): Promise<GlobalSettings> {
   try {
     const raw = await fs.readFile(settingsFilePath(), 'utf8')
@@ -111,7 +111,7 @@ export async function getSettings(): Promise<GlobalSettings> {
   }
 }
 
-/** Сохранить глобальные настройки (нормализуя ввод). Возвращает применённое. */
+/** Save global settings (normalizing the input). Returns what was applied. */
 export async function saveSettings(settings: GlobalSettings): Promise<GlobalSettings> {
   const normalized = normalize(settings)
   await atomicWriteJson(settingsFilePath(), normalized)

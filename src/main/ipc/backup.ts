@@ -1,9 +1,9 @@
 /**
- * IPC-обработчики резервного копирования.
+ * Backup IPC handlers.
  *
- * Жизненный цикл (открытие/закрытие) приходит из renderer, который знает
- * настройки. Дополнительно здесь отслеживается текущий открытый проект, чтобы
- * сделать снапшот при выходе из приложения (см. snapshotOnQuitIfNeeded).
+ * Lifecycle events (open/close) come from the renderer, which knows the
+ * settings. The currently open project is also tracked here to snapshot it
+ * when the app quits (see snapshotOnQuitIfNeeded).
  */
 
 import { ipcMain } from 'electron'
@@ -16,7 +16,7 @@ import { withLock } from '../services/lock'
 
 let currentProjectPath: string | null = null
 
-/** Снапшот под блокировкой проекта: не копируем файлы посреди мутации. */
+/** Snapshot under the project lock: never copy files mid-mutation. */
 function lockedSnapshot(
   projectPath: string,
   reason: BackupReason,
@@ -75,9 +75,9 @@ export function registerBackupIpc(): void {
 }
 
 /**
- * Снапшот текущего проекта при выходе из приложения (если включено в настройках).
- * Ограничен таймаутом: выход не должен подвисать из-за долгого бэкапа большого
- * проекта (медленный диск, антивирус) — это задерживало бы освобождение процесса.
+ * Snapshot of the current project on app quit (if enabled in settings).
+ * Bounded by a timeout: quitting must not hang on a long backup of a large
+ * project (slow disk, antivirus) — that would delay process shutdown.
  */
 export async function snapshotOnQuitIfNeeded(timeoutMs = 4000): Promise<void> {
   const path = currentProjectPath
@@ -92,6 +92,6 @@ export async function snapshotOnQuitIfNeeded(timeoutMs = 4000): Promise<void> {
       new Promise<void>((resolve) => setTimeout(resolve, timeoutMs))
     ])
   } catch {
-    /* при выходе ошибки бэкапа игнорируем */
+    /* backup errors on quit are ignored */
   }
 }

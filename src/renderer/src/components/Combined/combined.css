@@ -51,7 +51,7 @@
   margin: 0 auto;
 }
 
-/* Разделение глав внутри одной непрерывной страницы. */
+/* Chapter separation within one continuous page. */
 .combined__chapter.is-next {
   margin-top: 2.5em;
   padding-top: 2em;
