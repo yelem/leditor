@@ -113,7 +113,7 @@ export async function readManifest(projectPath: string): Promise<ProjectManifest
   if (!Array.isArray(manifest.tree)) {
     throw new Error(tMain('main.errCorruptTree'))
   }
-  // Корзина появилась позже — у старых проектов поля нет.
+  // У старых проектов поля корзины может не быть.
   if (!Array.isArray(manifest.trash)) {
     manifest.trash = []
   }

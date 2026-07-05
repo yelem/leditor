@@ -35,8 +35,8 @@ const SYSTEM_PREFIX =
 
 /**
  * Один пузырь сообщения. Мемоизирован: пока печатается новый ответ, завершённые
- * сообщения не перерисовываются (иначе ReactMarkdown заново парсит разметку всех
- * предыдущих ответов на каждый кадр — это и давало «лаги»).
+ * сообщения не перерисовываются — иначе ReactMarkdown заново разбирал бы
+ * разметку всей истории на каждый кадр стрима.
  */
 const MessageBubble = memo(function MessageBubble({
   role,
@@ -97,8 +97,8 @@ export function ChatPanel(): JSX.Element {
   pathRef.current = projectPath
   const listRef = useRef<HTMLDivElement>(null)
   // Буфер стриминга: накопленные дельты применяем к состоянию не на каждый
-  // токен, а раз в кадр (requestAnimationFrame) — иначе при быстром облачном
-  // стриме перерисовка растущего ответа подвисает.
+  // токен, а раз в кадр (requestAnimationFrame) — при быстром стриме это
+  // удерживает перерисовку растущего ответа в пределах кадра.
   const bufferRef = useRef('')
   const rafRef = useRef<number | null>(null)
 

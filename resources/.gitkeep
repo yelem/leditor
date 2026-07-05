@@ -1,2 +1,0 @@
-# Иконки приложения (icon.ico для Windows, icon.icns для macOS) добавляются на этапе 9.
-# Папка используется electron-builder как buildResources (см. electron-builder.yml).
