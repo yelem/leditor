@@ -36,6 +36,8 @@ fragments on request, using any AI provider you choose (including fully local on
   suggestion too, never applied silently.
 - Streaming responses, cancellable requests, generation of chapter summaries.
 
+![AI assistant: tracked suggestions and chat](docs/screenshots/ai-suggestions.png)
+
 ### Data safety
 - Projects are plain folders (`*.bookproj`) with JSON files inside — no lock-in, easy to sync or back up yourself.
 - **Automatic backups**: on open, on close, on an interval, and manual snapshots; rotation by count; one-click restore with a protective pre-restore snapshot.
