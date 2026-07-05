@@ -7,6 +7,8 @@ Leditor keeps your whole book in one place — parts, chapters, notes — and ad
 AI assistant that can discuss your story, proofread your prose and rewrite
 fragments on request, using any AI provider you choose (including fully local ones).
 
+![Leditor — main window](docs/screenshots/editor-light.png)
+
 ## Features
 
 ### Writing
@@ -44,6 +46,16 @@ fragments on request, using any AI provider you choose (including fully local on
 ### Export & interface
 - Export to **Word (.docx)**, **FB2** and **EPUB** — whole project, per folder, per chapter, or the current chapter only.
 - Interface languages: **English, Українська, Русский**. Light and dark themes.
+
+## Screenshots
+
+| Dark theme & interface language | Export to docx / FB2 / EPUB |
+| --- | --- |
+| ![Dark theme and language settings](docs/screenshots/settings-dark.png) | ![Export dialog](docs/screenshots/export.png) |
+
+Automatic backups — on open/close, on an interval and manually, with one-click restore:
+
+![Backup settings](docs/screenshots/backups.png)
 
 ## Installation
 
