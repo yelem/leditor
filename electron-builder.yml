@@ -1,0 +1,44 @@
+appId: com.leditor.app
+productName: Leditor
+directories:
+  buildResources: resources
+files:
+  - '!**/.vscode/*'
+  - '!**/.claude/*'
+  - '!src/*'
+  - '!scripts/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,FEATURES.md,BUILD-MAC.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!book-editor-spec.md'
+# Ассоциация расширения проекта. На macOS .bookproj — это пакет (папка),
+# поэтому isPackage: true даёт открытие приложения по двойному клику.
+fileAssociations:
+  - ext: bookproj
+    name: Leditor Project
+    description: Leditor book project
+    role: Editor
+    isPackage: true
+    icon: resources/icon.ico
+win:
+  target:
+    - nsis
+  icon: resources/icon.ico
+  artifactName: ${name}-${version}-setup.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: ${productName}
+  createDesktopShortcut: true
+mac:
+  target:
+    - target: dmg
+      arch:
+        - universal
+  category: public.app-category.productivity
+  icon: resources/icon.icns
+  artifactName: ${name}-${version}.${ext}
+dmg:
+  artifactName: ${name}-${version}.${ext}

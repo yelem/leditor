@@ -1,0 +1,484 @@
+.settings__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  width: 660px;
+  max-width: calc(100vw - 40px);
+  height: 560px;
+  max-height: calc(100vh - 60px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+/* Контейнер вкладок: боковая навигация + прокручиваемая область. */
+.settings__main {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.settings__nav {
+  flex: 0 0 168px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 10px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+  overflow-y: auto;
+}
+
+.settings__nav-item {
+  text-align: left;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+}
+
+.settings__nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.settings__nav-item.is-active {
+  color: var(--text);
+  background: var(--bg-hover);
+  font-weight: 600;
+}
+
+.settings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings__close {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.settings__close:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.settings__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 18px 12px;
+  overflow-y: auto;
+}
+
+.settings__section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings__section:last-child {
+  border-bottom: none;
+}
+
+.settings__heading {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.settings__note {
+  margin: -4px 0 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-faint);
+}
+
+.settings__field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.settings__field:last-child {
+  margin-bottom: 0;
+}
+
+.settings__field--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.settings__field--checkbox {
+  justify-content: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.settings__label {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings__hint {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.settings__select {
+  padding: 6px 8px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.settings__path {
+  padding: 7px 9px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.settings__path-value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings__path-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.settings__minor-btn {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.settings__minor-btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+.settings__minor-btn:disabled {
+  opacity: 0.5;
+}
+
+/* Пользовательский словарь. */
+.dict-empty {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.dict-input {
+  flex: 1;
+  height: 30px;
+  padding: 0 9px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  outline: none;
+}
+
+.dict-input:focus {
+  border-color: var(--accent);
+}
+
+.dict-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 132px;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.dict-list__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 10px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+
+.dict-list__remove {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+}
+
+.dict-list__remove:hover {
+  background: var(--bg-hover);
+  color: #c0524a;
+}
+
+/* --- Список ИИ-профилей --- */
+.ai-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.ai-list__active {
+  display: flex;
+  align-items: center;
+}
+
+.ai-list__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ai-list__name {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.ai-list__meta {
+  font-size: 11px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-list__actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+/* --- Редактор профиля (модалка поверх настроек) --- */
+.ai-editor__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.ai-editor {
+  display: flex;
+  flex-direction: column;
+  width: 440px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 60px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
+  overflow: hidden;
+}
+
+.ai-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ai-editor__header h3 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.ai-editor__body {
+  padding: 14px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-editor__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ai-editor__field input,
+.ai-editor__field select {
+  padding: 7px 9px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.ai-editor__field input:focus,
+.ai-editor__field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ai-editor__saved {
+  color: #2e9e44;
+  font-style: normal;
+}
+
+.ai-editor__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-editor__result {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ai-editor__result.is-ok {
+  color: #2e9e44;
+}
+
+.ai-editor__result.is-err {
+  color: #d05a52;
+}
+
+.ai-editor__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.settings__segmented {
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.settings__segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg-panel);
+  border: none;
+}
+
+.settings__segmented button + button {
+  border-left: 1px solid var(--border);
+}
+
+.settings__segmented button.is-active {
+  color: var(--accent-contrast);
+  background: var(--accent);
+}
+
+.settings__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.settings__saved {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.settings__done {
+  height: 32px;
+  padding: 0 16px;
+  font-size: 13px;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+}
+
+.settings__done:hover {
+  background: var(--accent-hover);
+}

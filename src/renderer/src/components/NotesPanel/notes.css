@@ -1,0 +1,138 @@
+.notes {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.notes--empty {
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.notes__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.notes__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes__status {
+  font-size: 11px;
+  color: var(--text-faint);
+  flex: 0 0 auto;
+  margin-left: 8px;
+}
+
+/* Панель форматирования заметок. */
+.notes__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.notes__tb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.notes__tb-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.notes__tb-btn.is-active {
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.notes__tb-btn:disabled {
+  opacity: 0.4;
+}
+
+.notes__tb-sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: var(--border);
+}
+
+/* Поле редактирования заметок. */
+.notes__editor {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.notes__prose {
+  min-height: 100%;
+  padding: 14px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  outline: none;
+}
+
+.notes__prose p {
+  margin: 0 0 8px;
+}
+
+.notes__prose ul,
+.notes__prose ol {
+  margin: 0 0 8px;
+  padding-left: 22px;
+}
+
+.notes__prose li {
+  margin-bottom: 2px;
+}
+
+.notes__prose blockquote {
+  margin: 0 0 8px;
+  padding-left: 12px;
+  border-left: 3px solid var(--border-strong);
+  color: var(--text-muted);
+}
+
+.notes__prose h2 {
+  margin: 4px 0 6px;
+  font-size: 16px;
+}
+
+.notes__prose h3 {
+  margin: 4px 0 6px;
+  font-size: 14px;
+}
+
+/* Подсказка-заполнитель (TipTap Placeholder). */
+.notes__prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--text-faint);
+}

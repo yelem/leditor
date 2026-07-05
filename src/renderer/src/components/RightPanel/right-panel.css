@@ -1,0 +1,53 @@
+.rpanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.rpanel__tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 38px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.rpanel__tab {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+}
+
+.rpanel__tab:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.rpanel__tab.is-active {
+  color: var(--accent);
+  background: var(--bg-selected);
+}
+
+.rpanel__model {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rpanel__body {
+  flex: 1;
+  min-height: 0;
+}

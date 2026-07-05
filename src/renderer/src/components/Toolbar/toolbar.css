@@ -1,0 +1,133 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 12px;
+  flex: 0 0 auto;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  -webkit-app-region: drag; /* окно можно тащить за тулбар */
+}
+
+.toolbar button {
+  -webkit-app-region: no-drag;
+}
+
+.toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar__group--right {
+  margin-left: auto;
+}
+
+.toolbar__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toolbar__project-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.toolbar__badge {
+  font-size: 11px;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+
+.toolbar__btn,
+.toolbar__toggle {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.toolbar__btn:hover,
+.toolbar__toggle:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+.toolbar__btn.is-active,
+.toolbar__toggle.is-active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Компактные иконки-тогглы (панели, настройки). */
+.toolbar__icon-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+}
+
+.toolbar__icon-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.toolbar__icon-toggle.is-active {
+  color: var(--accent);
+}
+
+.toolbar__dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Выпадающее меню «Проект». */
+.toolbar__menu {
+  position: fixed;
+  z-index: 200;
+  min-width: 190px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.toolbar__menu-item {
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.toolbar__menu-item:hover {
+  background: var(--bg-hover);
+}
+
+.toolbar__menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}

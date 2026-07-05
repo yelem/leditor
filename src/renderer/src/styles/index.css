@@ -1,0 +1,106 @@
+/* ============================================================
+   Глобальные токены, темы и базовые стили
+   ============================================================ */
+
+:root,
+:root[data-theme='light'] {
+  --bg: #f4f2ec;
+  --bg-panel: #fbfaf6;
+  --bg-elevated: #ffffff;
+  --bg-hover: #ece8df;
+  --bg-selected: #e6ddcb;
+  --text: #211f1b;
+  --text-muted: #6f6a60;
+  --text-faint: #9a9488;
+  --border: #e0dccf;
+  --border-strong: #cfc9b8;
+  --accent: #a9763a;
+  --accent-hover: #946531;
+  --accent-contrast: #ffffff;
+  --shadow: 0 1px 3px rgba(40, 32, 18, 0.08);
+  /* Фон вокруг «бумаги» редактора — глубже основного. */
+  --editor-bg: #e7e3d8;
+}
+
+:root[data-theme='dark'] {
+  --bg: #17150f;
+  --bg-panel: #201d16;
+  --bg-elevated: #29251c;
+  --bg-hover: #2c2820;
+  --bg-selected: #3a3328;
+  --text: #ece7da;
+  --text-muted: #a39c8c;
+  --text-faint: #756f61;
+  --border: #322d23;
+  --border-strong: #443e30;
+  --accent: #d6a05f;
+  --accent-hover: #e3b074;
+  --accent-contrast: #1a1610;
+  --shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  --editor-bg: #100e09;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  /* Интерфейс не выделяется — только текстовые области (ниже). */
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true'],
+.editor__prose,
+.chat__bubble,
+.combined__page,
+.modal__message {
+  user-select: text;
+}
+
+/* Во время перетаскивания разделителя — единый курсор, без выделения текста. */
+body.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* Тонкие скроллбары в духе тёмной/светлой темы. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+  background-clip: padding-box;
+}
