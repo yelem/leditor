@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { EditorContent, useEditor, type Editor as TipTapEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
+import { DEFAULT_PROJECT_SETTINGS } from '@shared/project-types'
 import { useProject } from '@renderer/store'
 import { findNodeTitle } from '@renderer/lib/tree'
 import { registerFlusher } from '@renderer/lib/flush-registry'
 import { useT, tGlobal } from '@renderer/lib/i18n'
+import { NumberField } from '@renderer/components/common/NumberField'
 import { Icon, type IconName } from '../Editor/Icons'
 import './notes.css'
 
@@ -36,8 +38,11 @@ function noteToHtml(raw: string): string {
 /** Notes for the current chapter. Autosaved to notes/<id>.json. */
 export function NotesPanel(): JSX.Element {
   const t = useT()
-  const { projectPath, manifest, activeDocId } = useProject()
+  const { projectPath, manifest, activeDocId, updateSettings } = useProject()
+  const notesFontSize = manifest?.settings.notesFontSize ?? DEFAULT_PROJECT_SETTINGS.notesFontSize
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [fontSizeOpen, setFontSizeOpen] = useState(false)
+  const fontSizeRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ctxRef = useRef<{ path: string; id: string } | null>(null)
   const pendingRef = useRef<{ path: string; id: string; html: string } | null>(null)
@@ -116,6 +121,25 @@ export function NotesPanel(): JSX.Element {
   // Register in the shared registry: flushed before window close and backup restore.
   useEffect(() => registerFlusher(flush), [flush])
 
+  // Close the font-size popover on outside click / Escape.
+  useEffect(() => {
+    if (!fontSizeOpen) return
+    const onDown = (e: MouseEvent): void => {
+      if (fontSizeRef.current && !fontSizeRef.current.contains(e.target as Node)) {
+        setFontSizeOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setFontSizeOpen(false)
+    }
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [fontSizeOpen])
+
   if (!projectPath || !activeDocId) {
     return (
       <div className="notes notes--empty">{t('notes.pickChapter')}</div>
@@ -156,9 +180,32 @@ export function NotesPanel(): JSX.Element {
         {tb('listBullet', t('fmt.bulletList'), () => chain()?.toggleBulletList().run(), editor?.isActive('bulletList'))}
         {tb('listOrdered', t('fmt.orderedList'), () => chain()?.toggleOrderedList().run(), editor?.isActive('orderedList'))}
         {tb('quote', t('fmt.quote'), () => chain()?.toggleBlockquote().run(), editor?.isActive('blockquote'))}
+
+        <button
+          type="button"
+          className={`notes__fontsize-btn${fontSizeOpen ? ' is-active' : ''}`}
+          title={t('appearance.fontSize')}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setFontSizeOpen((v) => !v)}
+        >
+          {t('notes.fontSizeBtn')}
+        </button>
+
+        {fontSizeOpen && (
+          <div className="notes__fontsize-pop" ref={fontSizeRef}>
+            <span>{t('appearance.fontSize')}</span>
+            <NumberField
+              value={notesFontSize}
+              min={10}
+              max={32}
+              suffix="px"
+              onCommit={(v) => updateSettings({ notesFontSize: v })}
+            />
+          </div>
+        )}
       </div>
 
-      <div className="notes__editor">
+      <div className="notes__editor" style={{ '--notes-font-size': `${notesFontSize}px` } as CSSProperties}>
         <EditorContent editor={editor} />
       </div>
     </div>

@@ -30,7 +30,9 @@ const SceneBreak = HorizontalRule.extend({
  */
 export const editorExtensions: Extensions = [
   StarterKit.configure({
-    heading: { levels: [1, 2, 3] },
+    heading: { levels: [1, 2, 3], HTMLAttributes: { style: 'white-space: pre-wrap' } },
+    paragraph: { HTMLAttributes: { style: 'white-space: pre-wrap' } },
+    blockquote: { HTMLAttributes: { style: 'white-space: pre-wrap' } },
     horizontalRule: false,
     // Smaller edit-grouping delay: every typing pause starts a separate undo
     // step, so Ctrl+Z does not roll back a whole paragraph at once.

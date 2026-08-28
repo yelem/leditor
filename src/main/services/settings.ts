@@ -82,7 +82,8 @@ function normalize(raw: Partial<GlobalSettings> | undefined): GlobalSettings {
       fontSize: num(inDefaults.fontSize, DEFAULT_PROJECT_SETTINGS.fontSize),
       lineHeight: num(inDefaults.lineHeight, DEFAULT_PROJECT_SETTINGS.lineHeight),
       editorWidth: num(inDefaults.editorWidth, DEFAULT_PROJECT_SETTINGS.editorWidth),
-      typewriterMode: bool(inDefaults.typewriterMode, DEFAULT_PROJECT_SETTINGS.typewriterMode)
+      typewriterMode: bool(inDefaults.typewriterMode, DEFAULT_PROJECT_SETTINGS.typewriterMode),
+      notesFontSize: num(inDefaults.notesFontSize, DEFAULT_PROJECT_SETTINGS.notesFontSize)
     },
     autosaveDelayMs: Math.max(100, num(raw?.autosaveDelayMs, d.autosaveDelayMs)),
     typography: normalizeTypography(raw?.typography),

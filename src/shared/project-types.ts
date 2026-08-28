@@ -33,6 +33,7 @@ export interface ProjectSettings {
   lineHeight: number
   editorWidth: number
   typewriterMode: boolean
+  notesFontSize: number
 }
 
 /**
@@ -85,7 +86,8 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   fontSize: 18,
   lineHeight: 1.6,
   editorWidth: 700,
-  typewriterMode: false
+  typewriterMode: false,
+  notesFontSize: 13
 }
 
 /** Empty document — a single paragraph. */

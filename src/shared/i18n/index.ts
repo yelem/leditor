@@ -145,6 +145,7 @@ export const en = {
   'notes.pickChapter': 'Select a chapter to keep notes on it.',
   'notes.title': 'Notes: {title}',
   'notes.chapter': 'chapter',
+  'notes.fontSizeBtn': 'Aa',
 
   // --- Right panel ---
   'rpanel.assistant': 'Assistant',
@@ -484,6 +485,7 @@ const uk: Record<TranslationKey, string> = {
   'notes.pickChapter': 'Виберіть розділ, щоб вести нотатки до нього.',
   'notes.title': 'Нотатки: {title}',
   'notes.chapter': 'розділ',
+  'notes.fontSizeBtn': 'Aa',
 
   'rpanel.assistant': 'Асистент',
   'rpanel.notes': 'Нотатки',
@@ -810,6 +812,7 @@ const ru: Record<TranslationKey, string> = {
   'notes.pickChapter': 'Выберите главу, чтобы вести по ней заметки.',
   'notes.title': 'Заметки: {title}',
   'notes.chapter': 'глава',
+  'notes.fontSizeBtn': 'Aa',
 
   'rpanel.assistant': 'Ассистент',
   'rpanel.notes': 'Заметки',

@@ -11,6 +11,7 @@ import { findNodeTitle } from '@renderer/lib/tree'
 import { registerFlusher } from '@renderer/lib/flush-registry'
 import { useT } from '@renderer/lib/i18n'
 import { editorExtensions } from './extensions'
+import { wordSafeTabHtml } from './clipboard-tabs'
 import { setTypographyConfig } from './typography'
 import { FormatToolbar } from './FormatToolbar'
 import { AppearancePopover } from './AppearancePopover'
@@ -132,6 +133,25 @@ export function Editor(): JSX.Element {
       void flushSave()
     }, autosaveDelay)
   }
+
+  // Word's paste importer drops literal tabs from copied HTML regardless of
+  // CSS. Runs after ProseMirror's own copy/cut handler has populated
+  // clipboardData, and rewrites the html flavor so tabs survive there too.
+  useEffect(() => {
+    if (!editor) return
+    const dom = editor.view.dom
+    const fixTabs = (e: ClipboardEvent): void => {
+      const html = e.clipboardData?.getData('text/html')
+      if (!html || !html.includes('\t')) return
+      e.clipboardData?.setData('text/html', wordSafeTabHtml(html))
+    }
+    dom.addEventListener('copy', fixTabs)
+    dom.addEventListener('cut', fixTabs)
+    return () => {
+      dom.removeEventListener('copy', fixTabs)
+      dom.removeEventListener('cut', fixTabs)
+    }
+  }, [editor])
 
   // Load contents on document switch; save the previous one on leave.
   useEffect(() => {
