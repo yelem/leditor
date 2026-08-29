@@ -28,6 +28,7 @@ export const FontSize = TextStyle.extend({
   },
   addCommands() {
     return {
+      ...this.parent?.(),
       setFontSize:
         (size) =>
         ({ chain }) =>
