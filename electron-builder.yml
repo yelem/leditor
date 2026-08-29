@@ -2,6 +2,10 @@ appId: com.leditor.app
 productName: Leditor
 directories:
   buildResources: resources
+publish:
+  provider: github
+  owner: yelem
+  repo: leditor
 files:
   - '!**/.vscode/*'
   - '!**/.claude/*'
@@ -37,8 +41,18 @@ mac:
     - target: dmg
       arch:
         - universal
+    # electron-updater's macOS updater (Squirrel.Mac) applies updates from a
+    # zipped app bundle, not the dmg — required for auto-update to work.
+    - target: zip
+      arch:
+        - universal
   category: public.app-category.productivity
   icon: resources/icon.icns
   artifactName: ${name}-${version}.${ext}
+  hardenedRuntime: true
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.plist
+  # Notarization runs automatically when APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/
+  # APPLE_TEAM_ID (or CSC_LINK signing identity) are set in the environment.
 dmg:
   artifactName: ${name}-${version}.${ext}

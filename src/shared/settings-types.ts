@@ -48,6 +48,12 @@ export interface BackupSettings {
   customLocation: string
 }
 
+/** Auto-update behavior. */
+export interface AutoUpdateSettings {
+  /** Silently check for updates on startup and offer to install them. */
+  enabled: boolean
+}
+
 export interface GlobalSettings {
   schemaVersion: number
   theme: Theme
@@ -62,6 +68,7 @@ export interface GlobalSettings {
   backup: BackupSettings
   /** AI provider profiles (no keys; keys live in safeStorage). */
   ai: AiSettings
+  autoUpdate: AutoUpdateSettings
 }
 
 export const DEFAULT_TYPOGRAPHY_SETTINGS: TypographySettings = {
@@ -78,6 +85,10 @@ export const DEFAULT_BACKUP_SETTINGS: BackupSettings = {
   customLocation: ''
 }
 
+export const DEFAULT_AUTO_UPDATE_SETTINGS: AutoUpdateSettings = {
+  enabled: true
+}
+
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   schemaVersion: SETTINGS_SCHEMA_VERSION,
   theme: 'light',
@@ -86,5 +97,6 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   autosaveDelayMs: 600,
   typography: { ...DEFAULT_TYPOGRAPHY_SETTINGS },
   backup: { ...DEFAULT_BACKUP_SETTINGS },
-  ai: { ...DEFAULT_AI_SETTINGS }
+  ai: { ...DEFAULT_AI_SETTINGS },
+  autoUpdate: { ...DEFAULT_AUTO_UPDATE_SETTINGS }
 }

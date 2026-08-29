@@ -3,6 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import { IpcChannels, type AppApi } from '@shared/ipc-contract'
 import type { AiStreamEvent } from '@shared/ai-types'
 import type { ExportProgress } from '@shared/export-types'
+import type { UpdateStatus } from '@shared/update-types'
 
 /**
  * The renderer → main bridge. The only channel the UI has to main-process
@@ -124,6 +125,16 @@ const api: AppApi = {
     removeFromDictionary: (word) => ipcRenderer.invoke(IpcChannels.spellRemoveWord, word),
     exportDictionary: () => ipcRenderer.invoke(IpcChannels.spellExportWords),
     importDictionary: () => ipcRenderer.invoke(IpcChannels.spellImportWords)
+  },
+  update: {
+    appVersion: () => ipcRenderer.invoke(IpcChannels.updateAppVersion),
+    check: () => ipcRenderer.invoke(IpcChannels.updateCheck),
+    install: () => ipcRenderer.invoke(IpcChannels.updateInstall),
+    onStatus: (callback) => {
+      const listener = (_e: unknown, status: UpdateStatus): void => callback(status)
+      ipcRenderer.on(IpcChannels.updateStatus, listener)
+      return () => ipcRenderer.removeListener(IpcChannels.updateStatus, listener)
+    }
   }
 }
 

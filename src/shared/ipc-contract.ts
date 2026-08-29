@@ -24,6 +24,7 @@ import type {
   GrammarEdit
 } from './ai-types'
 import type { ExportOptions, ExportProgress, ExportResult } from './export-types'
+import type { UpdateStatus } from './update-types'
 
 export const IpcChannels = {
   /** Renderer → main health check. Returns the string "pong". */
@@ -145,7 +146,16 @@ export const IpcChannels = {
   /** Load a chapter note. */
   noteLoad: 'workspace:noteLoad',
   /** Save a chapter note. */
-  noteSave: 'workspace:noteSave'
+  noteSave: 'workspace:noteSave',
+
+  /** Installed app version. */
+  updateAppVersion: 'update:appVersion',
+  /** Manually trigger a check for updates (interactive: reports "up to date" too). */
+  updateCheck: 'update:check',
+  /** Quit and install a downloaded update. */
+  updateInstall: 'update:install',
+  /** Update status changes (main → renderer). */
+  updateStatus: 'update:status'
 } as const
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels]
@@ -267,6 +277,18 @@ export interface AiApi {
   onStream: (callback: (event: AiStreamEvent) => void) => () => void
 }
 
+/** Auto-update API (electron-updater, GitHub Releases). */
+export interface UpdateApi {
+  /** Installed app version (package.json version of the running build). */
+  appVersion: () => Promise<string>
+  /** Manually ask main to check for updates. Result arrives via onStatus. */
+  check: () => Promise<void>
+  /** Quit and install a downloaded update. */
+  install: () => Promise<void>
+  /** Subscribe to update status changes. Returns an unsubscribe function. */
+  onStatus: (callback: (status: UpdateStatus) => void) => () => void
+}
+
 /** Project workspace data API (chat history, summaries cache). */
 export interface WorkspaceApi {
   loadChat: (projectPath: string) => Promise<AiChatMessage[]>
@@ -337,4 +359,5 @@ export interface AppApi {
   editor: EditorApi
   export: ExportApi
   app: AppEventsApi
+  update: UpdateApi
 }

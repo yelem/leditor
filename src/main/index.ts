@@ -13,6 +13,8 @@ import { registerDialogIpc } from './ipc/dialog'
 import { registerAiIpc } from './ipc/ai'
 import { registerWorkspaceIpc } from './ipc/workspace'
 import { registerExportIpc } from './ipc/export'
+import { registerUpdateIpc } from './ipc/updater'
+import { initUpdater, checkForUpdates } from './services/updater'
 
 let mainWindow: BrowserWindow | null = null
 // Project path to open as soon as the renderer is ready.
@@ -111,10 +113,10 @@ function createWindow(): void {
     })
   })
 
-  // Spell checking (Russian + English when available).
+  // Spell checking (Ukrainian + Russian + English when available).
   try {
     const available = win.webContents.session.availableSpellCheckerLanguages
-    const wanted = ['ru', 'en-US'].filter((l) => available.includes(l))
+    const wanted = ['uk', 'ru', 'en-US'].filter((l) => available.includes(l))
     if (wanted.length > 0) win.webContents.session.setSpellCheckerLanguages(wanted)
   } catch {
     /* spell checker unavailable — not critical */
@@ -284,6 +286,9 @@ function registerIpcHandlers(): void {
 
   // Project export (Word/FB2/EPUB).
   registerExportIpc()
+
+  // Auto-update (electron-updater / GitHub Releases).
+  registerUpdateIpc()
 }
 
 // Single application instance: a second launch (incl. double-clicking a
@@ -349,6 +354,12 @@ app.whenReady().then(() => {
   if (startupProject) pendingProjectPath = startupProject
 
   createWindow()
+
+  // Silent update check on startup (skipped in dev; gated by user settings).
+  initUpdater(() => mainWindow)
+  void getSettings().then((s) => {
+    if (s.autoUpdate.enabled) setTimeout(() => checkForUpdates(false), 3000)
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

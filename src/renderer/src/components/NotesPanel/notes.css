@@ -66,6 +66,12 @@
   color: var(--text);
 }
 
+.notes__fontsize-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  background: transparent;
+}
+
 .notes__fontsize-pop {
   position: absolute;
   right: 8px;

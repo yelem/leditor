@@ -7,9 +7,11 @@ import { app } from 'electron'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import {
+  type AutoUpdateSettings,
   type BackupSettings,
   type GlobalSettings,
   type TypographySettings,
+  DEFAULT_AUTO_UPDATE_SETTINGS,
   DEFAULT_GLOBAL_SETTINGS,
   DEFAULT_TYPOGRAPHY_SETTINGS,
   SETTINGS_SCHEMA_VERSION
@@ -65,6 +67,11 @@ function normalizeTypography(raw: Partial<TypographySettings> | undefined): Typo
   }
 }
 
+/** Normalize auto-update settings. */
+function normalizeAutoUpdate(raw: Partial<AutoUpdateSettings> | undefined): AutoUpdateSettings {
+  return { enabled: bool(raw?.enabled, DEFAULT_AUTO_UPDATE_SETTINGS.enabled) }
+}
+
 /** Merge an arbitrary object with defaults, dropping invalid/extra fields. */
 function normalize(raw: Partial<GlobalSettings> | undefined): GlobalSettings {
   const d = DEFAULT_GLOBAL_SETTINGS
@@ -95,7 +102,8 @@ function normalize(raw: Partial<GlobalSettings> | undefined): GlobalSettings {
       customLocation:
         typeof inBackup.customLocation === 'string' ? inBackup.customLocation : ''
     },
-    ai: normalizeAi(raw?.ai)
+    ai: normalizeAi(raw?.ai),
+    autoUpdate: normalizeAutoUpdate(raw?.autoUpdate)
   }
 }
 

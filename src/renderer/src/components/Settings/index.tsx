@@ -7,16 +7,18 @@ import { NumberField } from '@renderer/components/common/NumberField'
 import { FontSelect } from '@renderer/components/common/FontSelect'
 import { AiSettingsSection } from './AiSettings'
 import { SpellSettingsSection } from './SpellSettings'
+import { UpdateSettingsSection } from './UpdateSettings'
 import './settings.css'
 
-type TabId = 'appearance' | 'typography' | 'saving' | 'ai' | 'spell'
+type TabId = 'appearance' | 'typography' | 'saving' | 'ai' | 'spell' | 'update'
 
 const TABS: Array<{ id: TabId; labelKey: TranslationKey }> = [
   { id: 'appearance', labelKey: 'settings.tabAppearance' },
   { id: 'typography', labelKey: 'settings.tabTypography' },
   { id: 'saving', labelKey: 'settings.tabSaving' },
   { id: 'ai', labelKey: 'settings.tabAi' },
-  { id: 'spell', labelKey: 'settings.tabSpell' }
+  { id: 'spell', labelKey: 'settings.tabSpell' },
+  { id: 'update', labelKey: 'settings.tabUpdate' }
 ]
 
 /** Global application settings screen (stored in userData). */
@@ -311,6 +313,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Elemen
 
             {tab === 'ai' && <AiSettingsSection />}
             {tab === 'spell' && <SpellSettingsSection />}
+            {tab === 'update' && <UpdateSettingsSection />}
           </div>
         </div>
 

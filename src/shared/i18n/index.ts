@@ -146,6 +146,10 @@ export const en = {
   'notes.title': 'Notes: {title}',
   'notes.chapter': 'chapter',
   'notes.fontSizeBtn': 'Aa',
+  'notes.fontSizeAllTooltip': 'Font size for all notes',
+  'notes.selectionFontSizeBtn': 'A*',
+  'notes.selectionFontSizeTooltip': 'Font size for the selection',
+  'notes.resetFontSize': 'Reset',
 
   // --- Right panel ---
   'rpanel.assistant': 'Assistant',
@@ -180,6 +184,7 @@ export const en = {
   'settings.tabSaving': 'Saving',
   'settings.tabAi': 'Assistant',
   'settings.tabSpell': 'Spelling',
+  'settings.tabUpdate': 'Updates',
   'settings.language': 'Interface language',
   'settings.theme': 'Theme',
   'settings.light': 'Light',
@@ -217,6 +222,24 @@ export const en = {
   'settings.snapshotOnClose': 'Snapshot on project close',
   'settings.autoSaved': 'Changes are saved automatically',
   'settings.done': 'Done',
+
+  // --- Updates ---
+  'update.currentVersion': 'Current version',
+  'update.autoCheck': 'Check for updates automatically on startup',
+  'update.checkNow': 'Check now',
+  'update.checking': 'Checking for updates…',
+  'update.available': 'Update {version} found, downloading…',
+  'update.notAvailable': 'You have the latest version',
+  'update.downloading': 'Downloading update: {percent}%',
+  'update.downloaded': 'Update {version} downloaded, ready to install',
+  'update.error': 'Update check failed: {message}',
+  'update.restartNow': 'Restart now',
+  'update.later': 'Later',
+  'update.readyTitle': 'Update ready',
+  'update.readyMessage': 'Version {version} has been downloaded. Restart now to install it?',
+  'update.upToDateTitle': 'No updates',
+  'update.upToDateMessage': 'You already have the latest version.',
+  'update.errorTitle': 'Update error',
 
   // --- AI settings ---
   'ai.heading': 'AI providers',
@@ -486,6 +509,10 @@ const uk: Record<TranslationKey, string> = {
   'notes.title': 'Нотатки: {title}',
   'notes.chapter': 'розділ',
   'notes.fontSizeBtn': 'Aa',
+  'notes.fontSizeAllTooltip': 'Розмір шрифту для всіх нотаток',
+  'notes.selectionFontSizeBtn': 'A*',
+  'notes.selectionFontSizeTooltip': 'Розмір шрифту для виділеного',
+  'notes.resetFontSize': 'Скинути',
 
   'rpanel.assistant': 'Асистент',
   'rpanel.notes': 'Нотатки',
@@ -517,6 +544,7 @@ const uk: Record<TranslationKey, string> = {
   'settings.tabSaving': 'Збереження',
   'settings.tabAi': 'Асистент',
   'settings.tabSpell': 'Орфографія',
+  'settings.tabUpdate': 'Оновлення',
   'settings.language': 'Мова інтерфейсу',
   'settings.theme': 'Тема',
   'settings.light': 'Світла',
@@ -554,6 +582,25 @@ const uk: Record<TranslationKey, string> = {
   'settings.snapshotOnClose': 'Знімок під час закриття проєкту',
   'settings.autoSaved': 'Зміни зберігаються автоматично',
   'settings.done': 'Готово',
+
+  // --- Оновлення ---
+  'update.currentVersion': 'Поточна версія',
+  'update.autoCheck': 'Автоматично перевіряти оновлення під час запуску',
+  'update.checkNow': 'Перевірити зараз',
+  'update.checking': 'Перевірка оновлень…',
+  'update.available': 'Знайдено оновлення {version}, завантаження…',
+  'update.notAvailable': 'У вас остання версія',
+  'update.downloading': 'Завантаження оновлення: {percent}%',
+  'update.downloaded': 'Оновлення {version} завантажено, готове до встановлення',
+  'update.error': 'Не вдалося перевірити оновлення: {message}',
+  'update.restartNow': 'Перезапустити зараз',
+  'update.later': 'Пізніше',
+  'update.readyTitle': 'Оновлення готове',
+  'update.readyMessage':
+    'Версію {version} завантажено. Перезапустити зараз, щоб встановити її?',
+  'update.upToDateTitle': 'Оновлень немає',
+  'update.upToDateMessage': 'У вас уже остання версія.',
+  'update.errorTitle': 'Помилка оновлення',
 
   'ai.heading': 'Провайдери ШІ',
   'ai.note':
@@ -813,6 +860,10 @@ const ru: Record<TranslationKey, string> = {
   'notes.title': 'Заметки: {title}',
   'notes.chapter': 'глава',
   'notes.fontSizeBtn': 'Aa',
+  'notes.fontSizeAllTooltip': 'Размер шрифта для всех заметок',
+  'notes.selectionFontSizeBtn': 'A*',
+  'notes.selectionFontSizeTooltip': 'Размер шрифта для выделенного',
+  'notes.resetFontSize': 'Сбросить',
 
   'rpanel.assistant': 'Ассистент',
   'rpanel.notes': 'Заметки',
@@ -844,6 +895,7 @@ const ru: Record<TranslationKey, string> = {
   'settings.tabSaving': 'Сохранение',
   'settings.tabAi': 'Ассистент',
   'settings.tabSpell': 'Орфография',
+  'settings.tabUpdate': 'Обновления',
   'settings.language': 'Язык интерфейса',
   'settings.theme': 'Тема',
   'settings.light': 'Светлая',
@@ -881,6 +933,24 @@ const ru: Record<TranslationKey, string> = {
   'settings.snapshotOnClose': 'Снапшот при закрытии проекта',
   'settings.autoSaved': 'Изменения сохраняются автоматически',
   'settings.done': 'Готово',
+
+  // --- Обновления ---
+  'update.currentVersion': 'Текущая версия',
+  'update.autoCheck': 'Автоматически проверять обновления при запуске',
+  'update.checkNow': 'Проверить сейчас',
+  'update.checking': 'Проверка обновлений…',
+  'update.available': 'Найдено обновление {version}, загрузка…',
+  'update.notAvailable': 'У вас последняя версия',
+  'update.downloading': 'Загрузка обновления: {percent}%',
+  'update.downloaded': 'Обновление {version} загружено, готово к установке',
+  'update.error': 'Не удалось проверить обновления: {message}',
+  'update.restartNow': 'Перезапустить сейчас',
+  'update.later': 'Позже',
+  'update.readyTitle': 'Обновление готово',
+  'update.readyMessage': 'Версия {version} загружена. Перезапустить сейчас, чтобы установить её?',
+  'update.upToDateTitle': 'Обновлений нет',
+  'update.upToDateMessage': 'У вас уже последняя версия.',
+  'update.errorTitle': 'Ошибка обновления',
 
   'ai.heading': 'ИИ-провайдеры',
   'ai.note':
