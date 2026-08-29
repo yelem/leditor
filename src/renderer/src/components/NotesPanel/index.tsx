@@ -243,7 +243,6 @@ export function NotesPanel(): JSX.Element {
 
         {selFontSizeOpen && (
           <div className="notes__fontsize-pop" ref={selFontSizeRef}>
-            <span>{t('notes.selectionFontSizeTooltip')}</span>
             <NumberField
               value={selectionFontSize ? parseInt(selectionFontSize, 10) : notesFontSize}
               min={10}

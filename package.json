@@ -1,6 +1,6 @@
 {
   "name": "leditor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Cross-platform desktop editor for writing books, with an integrated AI assistant",
   "main": "./out/main/index.js",
   "author": "yelem",
@@ -18,7 +18,9 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "icons": "node scripts/make-icons.mjs",
     "dist:win": "electron-vite build && electron-builder --win",
+    "dist:win:publish": "electron-vite build && electron-builder --win --publish always",
     "dist:mac": "electron-vite build && electron-builder --mac",
+    "dist:mac:publish": "electron-vite build && electron-builder --mac --publish always",
     "dist:dir": "electron-vite build && electron-builder --dir"
   },
   "dependencies": {
