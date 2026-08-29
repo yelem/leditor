@@ -1,6 +1,6 @@
 {
   "name": "leditor",
-  "version": "1.0.2",
+  "version": "1.0.21",
   "description": "Cross-platform desktop editor for writing books, with an integrated AI assistant",
   "main": "./out/main/index.js",
   "author": "yelem",
