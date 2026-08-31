@@ -18,6 +18,13 @@ import {
 } from '@shared/settings-types'
 import { type ProjectSettings, DEFAULT_PROJECT_SETTINGS } from '@shared/project-types'
 import { type AiProfile, type AiSettings } from '@shared/ai-types'
+import {
+  type ExportMeta,
+  type ExportPreset,
+  type ExportStyle,
+  DEFAULT_EXPORT_META,
+  DEFAULT_EXPORT_STYLE
+} from '@shared/export-types'
 import { type UiLanguage, UI_LANGUAGES } from '@shared/settings-types'
 import { atomicWriteJson } from './storage'
 import { setMainLanguage } from '../i18n'
@@ -67,6 +74,58 @@ function normalizeTypography(raw: Partial<TypographySettings> | undefined): Typo
   }
 }
 
+/** Normalize export metadata (all fields optional — empty is a valid value). */
+function normalizeExportMeta(raw: Partial<ExportMeta> | undefined): ExportMeta {
+  const text = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
+  return {
+    authorFirstName: text(raw?.authorFirstName),
+    authorLastName: text(raw?.authorLastName),
+    homePage: text(raw?.homePage),
+    language: str(raw?.language, DEFAULT_EXPORT_META.language)
+  }
+}
+
+/** Page margin in cm, clamped to something a printer can actually do. */
+function margin(value: unknown, fallback: number): number {
+  return Math.min(10, Math.max(0, num(value, fallback)))
+}
+
+/** Normalize export typography; null when nothing usable was stored. */
+function normalizeExportStyle(raw: Partial<ExportStyle> | undefined | null): ExportStyle | null {
+  if (!raw || typeof raw !== 'object') return null
+  const d = DEFAULT_EXPORT_STYLE
+  const mode = raw.chapterTitle
+  return {
+    fontFamily: str(raw.fontFamily, d.fontFamily),
+    fontSizePt: Math.min(72, Math.max(6, num(raw.fontSizePt, d.fontSizePt))),
+    lineHeight: Math.min(4, Math.max(1, num(raw.lineHeight, d.lineHeight))),
+    spaceBeforePt: Math.min(72, Math.max(0, num(raw.spaceBeforePt, d.spaceBeforePt))),
+    spaceAfterPt: Math.min(72, Math.max(0, num(raw.spaceAfterPt, d.spaceAfterPt))),
+    justify: bool(raw.justify, d.justify),
+    hyphenation: bool(raw.hyphenation, d.hyphenation),
+    pageSize: raw.pageSize === 'a5' || raw.pageSize === 'letter' ? raw.pageSize : d.pageSize,
+    margins: {
+      top: margin(raw.margins?.top, d.margins.top),
+      bottom: margin(raw.margins?.bottom, d.margins.bottom),
+      left: margin(raw.margins?.left, d.margins.left),
+      right: margin(raw.margins?.right, d.margins.right)
+    },
+    chapterTitle: mode === 'centered' || mode === 'none' ? mode : 'heading'
+  }
+}
+
+/** Normalize saved export presets, dropping malformed entries. */
+function normalizeExportPresets(raw: unknown): ExportPreset[] {
+  if (!Array.isArray(raw)) return []
+  const out: ExportPreset[] = []
+  for (const item of raw as Array<Partial<ExportPreset>>) {
+    const style = normalizeExportStyle(item?.style)
+    if (typeof item?.id !== 'string' || !style) continue
+    out.push({ id: item.id, name: str(item.name, 'Preset'), style })
+  }
+  return out
+}
+
 /** Normalize auto-update settings. */
 function normalizeAutoUpdate(raw: Partial<AutoUpdateSettings> | undefined): AutoUpdateSettings {
   return { enabled: bool(raw?.enabled, DEFAULT_AUTO_UPDATE_SETTINGS.enabled) }
@@ -102,6 +161,9 @@ function normalize(raw: Partial<GlobalSettings> | undefined): GlobalSettings {
       customLocation:
         typeof inBackup.customLocation === 'string' ? inBackup.customLocation : ''
     },
+    exportMeta: normalizeExportMeta(raw?.exportMeta),
+    exportPresets: normalizeExportPresets(raw?.exportPresets),
+    exportStyle: normalizeExportStyle(raw?.exportStyle),
     ai: normalizeAi(raw?.ai),
     autoUpdate: normalizeAutoUpdate(raw?.autoUpdate)
   }

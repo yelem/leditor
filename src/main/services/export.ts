@@ -4,9 +4,17 @@
  */
 
 import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { type TreeNode, createEmptyDocument } from '@shared/project-types'
-import type { ExportOptions, ExportResult } from '@shared/export-types'
+import {
+  type ExportOptions,
+  type ExportResult,
+  type ExportStyle,
+  DEFAULT_EXPORT_STYLE,
+  pxToPt
+} from '@shared/export-types'
+import { getSettings } from './settings'
+import { tMain } from '../i18n'
 import { readDocument, readManifest } from './storage'
 import {
   buildDocx,
@@ -26,6 +34,49 @@ function collectDocs(nodes: TreeNode[]): Array<{ id: string; title: string }> {
   return out
 }
 
+/**
+ * Selected nodes in tree order, dropping those nested inside another selected
+ * node (they are exported as part of their ancestor anyway).
+ */
+function topLevelSelection(nodes: TreeNode[], ids: Set<string>): TreeNode[] {
+  const out: TreeNode[] = []
+  const walk = (list: TreeNode[]): void => {
+    for (const node of list) {
+      if (ids.has(node.id)) out.push(node)
+      else if (node.children.length > 0) walk(node.children)
+    }
+  }
+  walk(nodes)
+  return out
+}
+
+/**
+ * Turn a filesystem error into a message the user can act on: the usual case
+ * is the target file still open in Word/a reader, which locks it (EBUSY on
+ * Windows, EPERM/EACCES elsewhere).
+ */
+function writeFailure(err: unknown, filePath: string): Error {
+  const code = (err as NodeJS.ErrnoException)?.code
+  const file = basename(filePath)
+  if (code === 'EBUSY' || code === 'EPERM' || code === 'EACCES') {
+    return new Error(tMain('main.errExportLocked', { file }))
+  }
+  if (code === 'ENOSPC') return new Error(tMain('main.errExportNoSpace'))
+  if (code === 'ENOENT') return new Error(tMain('main.errExportNoDir'))
+  const detail = err instanceof Error ? err.message : String(err)
+  return new Error(tMain('main.errExportFailed', { file, detail }))
+}
+
+/** Write one exported file, reporting failures in plain language. */
+async function writeExportFile(filePath: string, data: Buffer | string): Promise<void> {
+  try {
+    if (typeof data === 'string') await fs.writeFile(filePath, data, 'utf8')
+    else await fs.writeFile(filePath, data)
+  } catch (err) {
+    throw writeFailure(err, filePath)
+  }
+}
+
 function sanitizeFileName(name: string): string {
   return name.replace(/[\\/:*?"<>|]+/g, '_').trim() || 'export'
 }
@@ -36,6 +87,15 @@ export async function exportProject(
   onProgress?: (done: number, total: number) => void
 ): Promise<ExportResult> {
   const manifest = await readManifest(projectPath)
+  // Without an explicit choice the output follows the project's writing area.
+  const style: ExportStyle = options.style ?? {
+    ...DEFAULT_EXPORT_STYLE,
+    fontFamily: manifest.settings.fontFamily,
+    fontSizePt: pxToPt(manifest.settings.fontSize),
+    lineHeight: manifest.settings.lineHeight
+  }
+  // Author/link/language preset — the same for every exported file.
+  const meta = (await getSettings()).exportMeta
 
   const loadSection = async (id: string, title: string): Promise<ExportSection> => ({
     title,
@@ -54,6 +114,13 @@ export async function exportProject(
       const docs = collectDocs(manifest.tree)
       const doc = docs.find((d) => d.id === options.currentDocId)
       if (doc) units.push({ title: doc.title, sections: [await loadSection(doc.id, doc.title)] })
+    }
+  } else if (options.granularity === 'selection') {
+    for (const node of topLevelSelection(manifest.tree, new Set(options.nodeIds ?? []))) {
+      const docs = node.type === 'folder' ? collectDocs(node.children) : [{ id: node.id, title: node.title }]
+      if (docs.length === 0) continue
+      const sections = await Promise.all(docs.map((d) => loadSection(d.id, d.title)))
+      units.push({ title: node.title, sections })
     }
   } else if (options.granularity === 'perChapter') {
     for (const d of collectDocs(manifest.tree)) {
@@ -86,11 +153,11 @@ export async function exportProject(
     const filePath = join(options.outputDir, name)
 
     if (options.format === 'docx') {
-      await fs.writeFile(filePath, await buildDocx(unit))
+      await writeExportFile(filePath, await buildDocx(unit, style, meta))
     } else if (options.format === 'epub') {
-      await fs.writeFile(filePath, await buildEpub(unit))
+      await writeExportFile(filePath, await buildEpub(unit, style, meta))
     } else {
-      await fs.writeFile(filePath, buildFb2(unit), 'utf8')
+      await writeExportFile(filePath, buildFb2(unit, meta))
     }
     written.push(filePath)
     onProgress?.(written.length, units.length)

@@ -304,12 +304,16 @@ export interface WorkspaceApi {
  * the domain model, persisted to disk, and returns the updated manifest.
  */
 export interface TreeApi {
-  /** Create a node inside parentId (null — root). */
+  /**
+   * Create a node inside parentId (null — root).
+   * index — position among siblings (undefined — append at the end).
+   */
   create: (
     projectPath: string,
     parentId: string | null,
     type: NodeType,
-    title: string
+    title: string,
+    index?: number
   ) => Promise<CreateNodeResult>
   /** Rename a node. */
   rename: (projectPath: string, nodeId: string, title: string) => Promise<ProjectManifest>

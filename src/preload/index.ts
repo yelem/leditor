@@ -26,8 +26,8 @@ const api: AppApi = {
       ipcRenderer.invoke(IpcChannels.documentSave, projectPath, nodeId, content)
   },
   tree: {
-    create: (projectPath, parentId, type, title) =>
-      ipcRenderer.invoke(IpcChannels.treeCreate, projectPath, parentId, type, title),
+    create: (projectPath, parentId, type, title, index) =>
+      ipcRenderer.invoke(IpcChannels.treeCreate, projectPath, parentId, type, title, index),
     rename: (projectPath, nodeId, title) =>
       ipcRenderer.invoke(IpcChannels.treeRename, projectPath, nodeId, title),
     remove: (projectPath, nodeId) =>

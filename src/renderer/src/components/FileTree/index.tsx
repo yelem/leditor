@@ -3,6 +3,7 @@ import type { NodeType, TreeNode } from '@shared/project-types'
 import { useProject } from '@renderer/store'
 import { indexTree, isDescendant } from '@renderer/lib/tree'
 import { ConfirmDialog } from '@renderer/components/common/ConfirmDialog'
+import { ExportDialog } from '@renderer/components/Export/ExportDialog'
 import { useT } from '@renderer/lib/i18n'
 import './file-tree.css'
 
@@ -42,6 +43,8 @@ export function FileTree(): JSX.Element {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [anchorId, setAnchorId] = useState<string | null>(null)
   const [trashOpen, setTrashOpen] = useState(false)
+  // Nodes handed to the export dialog (null — dialog closed).
+  const [exportIds, setExportIds] = useState<string[] | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -150,14 +153,41 @@ export function FileTree(): JSX.Element {
   const cancelRename = (): void => setEditingId(null)
 
   // --- Create / delete / duplicate ---
-  const handleCreate = async (parentId: string | null, type: NodeType): Promise<void> => {
+  const handleCreate = async (
+    parentId: string | null,
+    type: NodeType,
+    index?: number
+  ): Promise<void> => {
     setMenu(null)
     if (parentId) expand(parentId)
-    const newId = await createTreeNode(parentId, type)
+    const newId = await createTreeNode(parentId, type, index)
     if (newId) {
+      selectOnly(newId)
       setEditingId(newId)
       setEditValue(type === 'folder' ? t('tree.newFolder') : t('tree.newDocument'))
     }
+  }
+
+  /**
+   * Where a new node goes relative to the current selection: right after the
+   * selected document (same parent), at the end of a selected folder, or at
+   * the end of the root when nothing is selected.
+   */
+  const createTargetFor = (nodeId: string | null): { parentId: string | null; index?: number } => {
+    const node = nodeId ? idx.nodeOf.get(nodeId) : null
+    if (!node) return { parentId: null }
+    if (node.type === 'folder') return { parentId: node.id, index: node.children.length }
+    return {
+      parentId: idx.parentOf.get(node.id) ?? null,
+      index: (idx.indexOf.get(node.id) ?? 0) + 1
+    }
+  }
+
+  /** Create next to whatever is selected (toolbar buttons, Ctrl+N). */
+  const createNearSelection = (type: NodeType): void => {
+    const nodeId = anchorId ?? [...selectedIds][0] ?? activeDocId ?? null
+    const { parentId, index } = createTargetFor(nodeId)
+    void handleCreate(parentId, type, index)
   }
   // Deletion honors multi-selection: if the node is in a selection of >1, delete all.
   const requestDelete = (nodeId: string): void => {
@@ -168,6 +198,11 @@ export function FileTree(): JSX.Element {
   const handleDuplicate = (node: TreeNode): void => {
     setMenu(null)
     void duplicateTreeNode(node.id)
+  }
+  // Export honors multi-selection, like deletion does.
+  const requestExport = (nodeId: string): void => {
+    setMenu(null)
+    setExportIds(selectedIds.has(nodeId) && selectedIds.size > 1 ? [...selectedIds] : [nodeId])
   }
 
   const handleRowClick = (node: TreeNode, e: React.MouseEvent): void => {
@@ -200,10 +235,7 @@ export function FileTree(): JSX.Element {
     } else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyN') {
       // e.code, not e.key — independent of the keyboard layout.
       e.preventDefault()
-      const type: NodeType = e.shiftKey ? 'folder' : 'document'
-      let parentId: string | null = null
-      if (sel) parentId = sel.type === 'folder' ? sel.id : (idx.parentOf.get(sel.id) ?? null)
-      void handleCreate(parentId, type)
+      createNearSelection(e.shiftKey ? 'folder' : 'document')
     }
   }
 
@@ -344,16 +376,16 @@ export function FileTree(): JSX.Element {
             <button
               type="button"
               className="panel__action"
-              title={t('tree.newDocRoot')}
-              onClick={() => handleCreate(null, 'document')}
+              title={t('tree.newDocBtn')}
+              onClick={() => createNearSelection('document')}
             >
               <IconFilePlus />
             </button>
             <button
               type="button"
               className="panel__action"
-              title={t('tree.newFolderRoot')}
-              onClick={() => handleCreate(null, 'folder')}
+              title={t('tree.newFolderBtn')}
+              onClick={() => createNearSelection('folder')}
             >
               <IconFolderPlus />
             </button>
@@ -449,28 +481,39 @@ export function FileTree(): JSX.Element {
           style={{ left: menu.x, top: menu.y }}
           onClick={(e) => e.stopPropagation()}
         >
-          {menuNode.type === 'folder' && deleteCount === 1 && (
+          {deleteCount === 1 && (
             <>
-              <li className="ctx__item" onClick={() => handleCreate(menuNode.id, 'document')}>
+              {/* A folder receives new children; a document gets siblings next to it. */}
+              <li
+                className="ctx__item"
+                onClick={() => {
+                  const { parentId, index } = createTargetFor(menuNode.id)
+                  void handleCreate(parentId, 'document', index)
+                }}
+              >
                 {t('tree.newDocument')}
-              </li>
-              <li className="ctx__item" onClick={() => handleCreate(menuNode.id, 'folder')}>
-                {t('tree.newFolder')}
               </li>
               <li
                 className="ctx__item"
                 onClick={() => {
-                  setMenu(null)
-                  showCombined({ type: 'folder', id: menuNode.id })
+                  const { parentId, index } = createTargetFor(menuNode.id)
+                  void handleCreate(parentId, 'folder', index)
                 }}
               >
-                {t('tree.showCombined')}
+                {t('tree.newFolder')}
               </li>
+              {menuNode.type === 'folder' && (
+                <li
+                  className="ctx__item"
+                  onClick={() => {
+                    setMenu(null)
+                    showCombined({ type: 'folder', id: menuNode.id })
+                  }}
+                >
+                  {t('tree.showCombined')}
+                </li>
+              )}
               <li className="ctx__sep" />
-            </>
-          )}
-          {deleteCount === 1 && (
-            <>
               <li className="ctx__item" onClick={() => beginRename(menuNode)}>
                 {t('tree.rename')}
               </li>
@@ -480,10 +523,18 @@ export function FileTree(): JSX.Element {
               <li className="ctx__sep" />
             </>
           )}
+          <li className="ctx__item" onClick={() => requestExport(menuNode.id)}>
+            {deleteCount > 1 ? t('tree.exportN', { n: deleteCount }) : t('tree.export')}
+          </li>
+          <li className="ctx__sep" />
           <li className="ctx__item ctx__item--danger" onClick={() => requestDelete(menuNode.id)}>
             {deleteCount > 1 ? t('tree.deleteN', { n: deleteCount }) : t('tree.delete')}
           </li>
         </ul>
+      )}
+
+      {exportIds && (
+        <ExportDialog selectionIds={exportIds} onClose={() => setExportIds(null)} />
       )}
 
       {confirmIds && (

@@ -162,12 +162,13 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
       projectPath: string,
       parentId: string | null,
       type: NodeType,
-      title: string
+      title: string,
+      index?: number
     ): Promise<CreateNodeResult> =>
       withLock(projectPath, async () => {
         const manifest = await readManifest(projectPath)
         const node = createNode(type, title)
-        const tree = insertNode(manifest.tree, node, parentId)
+        const tree = insertNode(manifest.tree, node, parentId, index)
         const saved = await writeManifest(projectPath, { ...manifest, tree })
         if (type === 'document') {
           await writeDocument(projectPath, node.id, createEmptyDocument())

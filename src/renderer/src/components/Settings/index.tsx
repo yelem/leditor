@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSettings } from '@renderer/store'
+import { useProject, useSettings } from '@renderer/store'
 import { LANGUAGE_LABELS, type TranslationKey } from '@shared/i18n'
 import { UI_LANGUAGES } from '@shared/settings-types'
 import { useT } from '@renderer/lib/i18n'
@@ -10,11 +10,12 @@ import { SpellSettingsSection } from './SpellSettings'
 import { UpdateSettingsSection } from './UpdateSettings'
 import './settings.css'
 
-type TabId = 'appearance' | 'typography' | 'saving' | 'ai' | 'spell' | 'update'
+type TabId = 'appearance' | 'typography' | 'export' | 'saving' | 'ai' | 'spell' | 'update'
 
 const TABS: Array<{ id: TabId; labelKey: TranslationKey }> = [
   { id: 'appearance', labelKey: 'settings.tabAppearance' },
   { id: 'typography', labelKey: 'settings.tabTypography' },
+  { id: 'export', labelKey: 'settings.tabExport' },
   { id: 'saving', labelKey: 'settings.tabSaving' },
   { id: 'ai', labelKey: 'settings.tabAi' },
   { id: 'spell', labelKey: 'settings.tabSpell' },
@@ -25,8 +26,29 @@ const TABS: Array<{ id: TabId; labelKey: TranslationKey }> = [
 export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Element {
   const t = useT()
   const { settings, patch } = useSettings()
-  const { defaults, backup, typography } = settings
+  const { manifest, updateSettings } = useProject()
+  const { defaults, backup, typography, exportMeta } = settings
   const [tab, setTab] = useState<TabId>('appearance')
+  // Short "applied" confirmation after copying the defaults into the project.
+  const [applied, setApplied] = useState(false)
+
+  useEffect(() => {
+    if (!applied) return
+    const timer = setTimeout(() => setApplied(false), 2000)
+    return () => clearTimeout(timer)
+  }, [applied])
+
+  // The open project keeps its own writing-area settings; this copies the
+  // defaults into it, so changing them here has a visible effect right away.
+  const applyDefaultsToProject = (): void => {
+    void updateSettings({
+      fontFamily: defaults.fontFamily,
+      fontSize: defaults.fontSize,
+      lineHeight: defaults.lineHeight,
+      editorWidth: defaults.editorWidth
+    })
+    setApplied(true)
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -152,6 +174,18 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Elemen
                       onCommit={(v) => patch({ defaults: { ...defaults, editorWidth: v } })}
                     />
                   </div>
+
+                  <div className="settings__path-actions">
+                    <button
+                      type="button"
+                      className="settings__minor-btn"
+                      disabled={!manifest}
+                      onClick={applyDefaultsToProject}
+                    >
+                      {t('settings.applyToCurrent')}
+                    </button>
+                    {applied && <span className="settings__saved">{t('settings.applied')}</span>}
+                  </div>
                 </section>
               </>
             )}
@@ -209,6 +243,61 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Elemen
                   />
                   <span>{t('settings.ellipsis')}</span>
                 </label>
+              </section>
+            )}
+
+            {tab === 'export' && (
+              <section className="settings__section">
+                <h3 className="settings__heading">{t('settings.exportMetaHeading')}</h3>
+                <p className="settings__note">{t('settings.exportMetaNote')}</p>
+
+                <div className="settings__field settings__field--stack">
+                  <span className="settings__label">{t('settings.authorFirstName')}</span>
+                  <input
+                    className="settings__select"
+                    value={exportMeta.authorFirstName}
+                    onChange={(e) =>
+                      patch({ exportMeta: { ...exportMeta, authorFirstName: e.target.value } })
+                    }
+                  />
+                </div>
+
+                <div className="settings__field settings__field--stack">
+                  <span className="settings__label">{t('settings.authorLastName')}</span>
+                  <input
+                    className="settings__select"
+                    value={exportMeta.authorLastName}
+                    onChange={(e) =>
+                      patch({ exportMeta: { ...exportMeta, authorLastName: e.target.value } })
+                    }
+                  />
+                </div>
+
+                <div className="settings__field settings__field--stack">
+                  <span className="settings__label">{t('settings.authorHomePage')}</span>
+                  <input
+                    className="settings__select"
+                    placeholder="https://…"
+                    value={exportMeta.homePage}
+                    onChange={(e) =>
+                      patch({ exportMeta: { ...exportMeta, homePage: e.target.value } })
+                    }
+                  />
+                </div>
+
+                <div className="settings__field settings__field--stack">
+                  <span className="settings__label">
+                    {t('settings.bookLanguage')}
+                    <span className="settings__hint">{t('settings.bookLanguageHint')}</span>
+                  </span>
+                  <input
+                    className="settings__select"
+                    value={exportMeta.language}
+                    onChange={(e) =>
+                      patch({ exportMeta: { ...exportMeta, language: e.target.value } })
+                    }
+                  />
+                </div>
               </section>
             )}
 

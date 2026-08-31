@@ -8,6 +8,7 @@
 
 import { type ProjectSettings, DEFAULT_PROJECT_SETTINGS } from './project-types'
 import { type AiSettings, DEFAULT_AI_SETTINGS } from './ai-types'
+import { type ExportMeta, type ExportPreset, type ExportStyle, DEFAULT_EXPORT_META } from './export-types'
 
 export const SETTINGS_SCHEMA_VERSION = 1
 
@@ -66,6 +67,12 @@ export interface GlobalSettings {
   /** Smart typography while typing. */
   typography: TypographySettings
   backup: BackupSettings
+  /** Author/book metadata applied to every export. */
+  exportMeta: ExportMeta
+  /** Saved export typography presets. */
+  exportPresets: ExportPreset[]
+  /** Typography of the last export — prefills the dialog next time. */
+  exportStyle: ExportStyle | null
   /** AI provider profiles (no keys; keys live in safeStorage). */
   ai: AiSettings
   autoUpdate: AutoUpdateSettings
@@ -97,6 +104,9 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   autosaveDelayMs: 600,
   typography: { ...DEFAULT_TYPOGRAPHY_SETTINGS },
   backup: { ...DEFAULT_BACKUP_SETTINGS },
+  exportMeta: { ...DEFAULT_EXPORT_META },
+  exportPresets: [],
+  exportStyle: null,
   ai: { ...DEFAULT_AI_SETTINGS },
   autoUpdate: { ...DEFAULT_AUTO_UPDATE_SETTINGS }
 }

@@ -42,7 +42,11 @@ interface ProjectContextValue extends ProjectState {
   clearError: () => void
 
   // Tree mutations (applied in main, return the updated manifest).
-  createTreeNode: (parentId: string | null, type: NodeType) => Promise<string | null>
+  createTreeNode: (
+    parentId: string | null,
+    type: NodeType,
+    index?: number
+  ) => Promise<string | null>
   renameTreeNode: (nodeId: string, title: string) => Promise<void>
   /** Move nodes to trash (with subtrees). */
   trashNodes: (nodeIds: string[]) => Promise<void>
@@ -238,12 +242,22 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
   )
 
   const createTreeNode = useCallback(
-    async (parentId: string | null, type: NodeType): Promise<string | null> => {
+    async (
+      parentId: string | null,
+      type: NodeType,
+      index?: number
+    ): Promise<string | null> => {
       const path = stateRef.current.projectPath
       if (!path) return null
       try {
         const title = type === 'folder' ? tGlobal('tree.newFolder') : tGlobal('tree.newDocument')
-        const { manifest, nodeId } = await window.api.tree.create(path, parentId, type, title)
+        const { manifest, nodeId } = await window.api.tree.create(
+          path,
+          parentId,
+          type,
+          title,
+          index
+        )
         setState((s) => ({
           ...s,
           manifest,

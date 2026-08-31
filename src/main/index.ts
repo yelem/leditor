@@ -27,6 +27,8 @@ let pendingProjectPath: string | null = null
 
 let rendererFlushed = false
 let flushWaiters: Array<() => void> = []
+// Set once app quit has started (Cmd+Q, menu Quit, app.quit()).
+let isQuitting = false
 
 function resolveRendererFlush(): void {
   rendererFlushed = true
@@ -110,6 +112,10 @@ function createWindow(): void {
       flushedBeforeClose = true
       // destroy() closes the window without emitting another close event.
       if (!win.isDestroyed()) win.destroy()
+      // preventDefault() above cancels an in-progress quit (macOS Cmd+Q):
+      // Electron treats a vetoed window close as a vetoed quit. Resume it,
+      // otherwise the app stays alive as a windowless process.
+      if (isQuitting) app.quit()
     })
   })
 
@@ -369,7 +375,8 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  // macOS keeps the app running without windows — unless a quit is underway.
+  if (process.platform !== 'darwin' || isQuitting) {
     app.quit()
   }
 })
@@ -377,6 +384,7 @@ app.on('window-all-closed', () => {
 // Snapshot of the current project before quitting (if enabled in settings).
 let quitHandled = false
 app.on('before-quit', (event) => {
+  isQuitting = true
   if (quitHandled) return
   event.preventDefault()
   quitHandled = true
