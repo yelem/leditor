@@ -106,14 +106,19 @@ export function registerAiIpc(): void {
   ipcMain.handle(
     IpcChannels.aiChat,
     async (event, requestId: string, messages: AiChatMessage[]): Promise<string> => {
-      const provider = await activeProvider()
       const controller = new AbortController()
       controllers.set(requestId, controller)
       try {
+        // Resolving the profile is inside the try as well: otherwise a missing
+        // profile or key would reject without an 'error' event and the panel
+        // would stay in the streaming state forever.
+        const provider = await activeProvider()
         const full = await provider.chat(messages, {
           signal: controller.signal,
           onDelta: (text) =>
-            event.sender.send(IpcChannels.aiStream, { type: 'delta', requestId, text })
+            event.sender.send(IpcChannels.aiStream, { type: 'delta', requestId, text }),
+          onThinking: () =>
+            event.sender.send(IpcChannels.aiStream, { type: 'thinking', requestId })
         })
         event.sender.send(IpcChannels.aiStream, { type: 'done', requestId })
         return full

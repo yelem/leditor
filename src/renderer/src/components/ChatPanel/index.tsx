@@ -41,11 +41,14 @@ const SYSTEM_PREFIX =
 const MessageBubble = memo(function MessageBubble({
   role,
   content,
-  streaming
+  streaming,
+  placeholder
 }: {
   role: AiChatMessage['role']
   content: string
   streaming: boolean
+  /** Shown instead of an empty reply while it is still being generated. */
+  placeholder: string
 }): JSX.Element {
   return (
     <div className={`chat__msg chat__msg--${role}`}>
@@ -53,7 +56,7 @@ const MessageBubble = memo(function MessageBubble({
         {role === 'assistant' ? (
           streaming ? (
             // While streaming — plain text (no Markdown parsing every frame).
-            content || '…'
+            content || <span className="chat__pending">{placeholder}</span>
           ) : content ? (
             <div className="chat__md">
               <ReactMarkdown>{content}</ReactMarkdown>
@@ -89,6 +92,11 @@ export function ChatPanel(): JSX.Element {
   const [summaries, setSummaries] = useState<Record<string, string>>({})
   const [genBusy, setGenBusy] = useState(false)
   const [ctxChars, setCtxChars] = useState(0)
+  // When a reasoning model started deliberating (null — it is not, or the
+  // answer has already begun). Only a sign of life: the reasoning text itself
+  // is never streamed or stored.
+  const [thinkingSince, setThinkingSince] = useState<number | null>(null)
+  const [thinkingSec, setThinkingSec] = useState(0)
 
   const reqRef = useRef<string | null>(null)
   const messagesRef = useRef(messages)
@@ -141,6 +149,29 @@ export function ChatPanel(): JSX.Element {
     setMessages((m) => setLastAssistant(m, (prev) => prev + chunk))
   }, [])
 
+  // End the current request: flush (or discard) the stream buffer, release the
+  // UI and save the history. `errorText` replaces the reply when the request
+  // failed. Every exit path goes through here — a request that ends without it
+  // would leave the panel stuck in the streaming state.
+  const finishRequest = useCallback(
+    (errorText: string | null) => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+      const chunk = bufferRef.current
+      bufferRef.current = ''
+      if (errorText != null) setMessages((m) => setLastAssistant(m, () => errorText))
+      else if (chunk) setMessages((m) => setLastAssistant(m, (prev) => prev + chunk))
+      setStreaming(false)
+      setThinkingSince(null)
+      reqRef.current = null
+      // messagesRef updates by the next tick — save then.
+      setTimeout(() => saveChat(messagesRef.current), 0)
+    },
+    [saveChat]
+  )
+
   // Build the context for the model.
   const buildContext = useCallback(async (): Promise<string> => {
     if (!projectPath || !manifest) return ''
@@ -181,37 +212,37 @@ export function ChatPanel(): JSX.Element {
 
   // Subscribe to reply streaming.
   useEffect(() => {
-    const cancelRaf = (): void => {
-      if (rafRef.current != null) {
-        cancelAnimationFrame(rafRef.current)
-        rafRef.current = null
-      }
-    }
     return window.api.ai.onStream((e) => {
       if (e.requestId !== reqRef.current) return
       if (e.type === 'delta') {
         // Accumulate deltas; refresh the screen once per frame.
         bufferRef.current += e.text
         if (rafRef.current == null) rafRef.current = requestAnimationFrame(flushBuffer)
+        // The answer has started — the deliberation is over.
+        setThinkingSince((since) => (since == null ? since : null))
+      } else if (e.type === 'thinking') {
+        // Arrives per reasoning token; the timestamp is set once, so the
+        // counter measures the whole deliberation and state is not churned.
+        setThinkingSince((since) => since ?? Date.now())
       } else if (e.type === 'done') {
-        cancelRaf()
-        const chunk = bufferRef.current
-        bufferRef.current = ''
-        if (chunk) setMessages((m) => setLastAssistant(m, (prev) => prev + chunk))
-        setStreaming(false)
-        reqRef.current = null
-        // messagesRef updates by the next tick — save then.
-        setTimeout(() => saveChat(messagesRef.current), 0)
+        finishRequest(null)
       } else if (e.type === 'error') {
-        cancelRaf()
-        bufferRef.current = ''
-        setMessages((m) => setLastAssistant(m, () => t('chat.error', { msg: e.error })))
-        setStreaming(false)
-        reqRef.current = null
-        setTimeout(() => saveChat(messagesRef.current), 0)
+        finishRequest(t('chat.error', { msg: e.error }))
       }
     })
-  }, [saveChat, flushBuffer, t])
+  }, [finishRequest, flushBuffer, t])
+
+  // Tick the deliberation counter once a second while it runs.
+  useEffect(() => {
+    if (thinkingSince == null) {
+      setThinkingSec(0)
+      return
+    }
+    const tick = (): void => setThinkingSec(Math.round((Date.now() - thinkingSince) / 1000))
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [thinkingSince])
 
   // Cancel a pending frame on unmount.
   useEffect(
@@ -236,24 +267,37 @@ export function ChatPanel(): JSX.Element {
     setInput('')
     saveChat(history)
 
-    const context = await buildContext()
-    const recent = trimHistory(history)
-    const toSend: AiChatMessage[] = context
-      ? [{ role: 'system', content: context }, ...recent]
-      : recent
-
     const requestId = crypto.randomUUID()
     reqRef.current = requestId
     setStreaming(true)
     try {
+      const context = await buildContext()
+      const recent = trimHistory(history)
+      const toSend: AiChatMessage[] = context
+        ? [{ role: 'system', content: context }, ...recent]
+        : recent
       await window.api.ai.chat(requestId, toSend)
-    } catch {
-      // The error already arrived as an 'error' event.
+    } catch (err) {
+      // Normally the failure already arrived as an 'error' event, which cleared
+      // reqRef. If it did not (the request never reached the model — no profile,
+      // no key, a failure while building the context), finish the request here:
+      // otherwise the panel would stay in the streaming state and silently
+      // swallow every further send.
+      if (reqRef.current === requestId) {
+        finishRequest(t('chat.error', { msg: err instanceof Error ? err.message : String(err) }))
+      }
     }
   }
 
   const stop = (): void => {
-    if (reqRef.current) void window.api.ai.abort(reqRef.current)
+    const id = reqRef.current
+    if (!id) return
+    void window.api.ai.abort(id)
+    // The abort is answered by a 'done' event; if the request is already gone in
+    // main (nothing to abort), release the UI here so the panel stays usable.
+    window.setTimeout(() => {
+      if (reqRef.current === id) finishRequest(null)
+    }, 1000)
   }
 
   const clearChat = (): void => {
@@ -362,6 +406,11 @@ export function ChatPanel(): JSX.Element {
               role={m.role}
               content={m.content}
               streaming={streaming && i === messages.length - 1}
+              placeholder={
+                thinkingSince != null && i === messages.length - 1
+                  ? t('chat.thinking', { s: thinkingSec })
+                  : '…'
+              }
             />
           ))
         )}

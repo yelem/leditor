@@ -150,6 +150,13 @@
   border-bottom-left-radius: 4px;
 }
 
+/* Placeholder in a reply that has not started yet ("…", "the model is
+   thinking… N s"): service text, not the reply itself. */
+.chat__pending {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* Markdown in assistant replies. */
 .chat__md {
   /* The bubble uses pre-wrap (for user text) — for rendered markup that

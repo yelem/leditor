@@ -178,6 +178,7 @@ export const en = {
   'chat.stop': 'Stop',
   'chat.send': 'Send',
   'chat.error': '⚠ Error: {msg}',
+  'chat.thinking': 'The model is thinking… {s} s',
 
   // --- Settings ---
   'settings.title': 'Settings',
@@ -423,6 +424,8 @@ export const en = {
   'main.errNoKey': 'No API key set for profile “{name}”.',
   'main.errServer': 'Server responded {status}',
   'main.errServerModels': 'Server responded {status} when requesting the model list',
+  'main.errEmptyReply':
+    'The model returned an empty reply: its reasoning used up the whole reply budget. Try again, or pick a model without extended reasoning.',
   'main.errStorageUnavailable': 'System secure storage is unavailable — the key was not saved'
 } as const
 
@@ -586,6 +589,7 @@ const uk: Record<TranslationKey, string> = {
   'chat.stop': 'Стоп',
   'chat.send': 'Надіслати',
   'chat.error': '⚠ Помилка: {msg}',
+  'chat.thinking': 'Модель міркує… {s} с',
 
   'settings.title': 'Налаштування',
   'settings.tabAppearance': 'Зовнішній вигляд',
@@ -823,6 +827,8 @@ const uk: Record<TranslationKey, string> = {
   'main.errNoKey': 'Для профілю «{name}» не задано API-ключ.',
   'main.errServer': 'Сервер відповів {status}',
   'main.errServerModels': 'Сервер відповів {status} на запит списку моделей',
+  'main.errEmptyReply':
+    'Модель повернула порожню відповідь: її роздуми з’їли весь ліміт відповіді. Спробуйте ще раз або оберіть модель без розширених роздумів.',
   'main.errStorageUnavailable': 'Системне безпечне сховище недоступне — ключ не збережено'
 }
 
@@ -984,6 +990,7 @@ const ru: Record<TranslationKey, string> = {
   'chat.stop': 'Стоп',
   'chat.send': 'Отправить',
   'chat.error': '⚠ Ошибка: {msg}',
+  'chat.thinking': 'Модель размышляет… {s} с',
 
   'settings.title': 'Настройки',
   'settings.tabAppearance': 'Внешний вид',
@@ -1220,6 +1227,8 @@ const ru: Record<TranslationKey, string> = {
   'main.errNoKey': 'Для профиля «{name}» не задан API-ключ.',
   'main.errServer': 'Сервер ответил {status}',
   'main.errServerModels': 'Сервер ответил {status} при запросе списка моделей',
+  'main.errEmptyReply':
+    'Модель вернула пустой ответ: её рассуждения съели весь лимит ответа. Попробуйте ещё раз или выберите модель без расширенных рассуждений.',
   'main.errStorageUnavailable': 'Системное безопасное хранилище недоступно — ключ не сохранён'
 }
 

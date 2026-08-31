@@ -61,6 +61,11 @@ export interface AiTestResult {
 /** Chat streaming event (main → renderer). */
 export type AiStreamEvent =
   | { type: 'delta'; requestId: string; text: string }
+  /**
+   * A reasoning model is deliberating: it streams reasoning tokens and no
+   * answer yet. Only a sign of life — the reasoning text itself is not sent.
+   */
+  | { type: 'thinking'; requestId: string }
   | { type: 'done'; requestId: string }
   | { type: 'error'; requestId: string; error: string }
 

@@ -22,6 +22,11 @@ import { tMain } from '../i18n'
 export interface ChatOptions {
   signal?: AbortSignal
   onDelta?: (text: string) => void
+  /**
+   * The model is emitting reasoning tokens and no answer yet. Called as a
+   * heartbeat only — the reasoning text is deliberately not passed on.
+   */
+  onThinking?: () => void
   maxTokens?: number
 }
 
@@ -32,6 +37,12 @@ export interface AiProvider {
   testConnection: () => Promise<AiTestResult>
   listModels: () => Promise<AiModelInfo[]>
 }
+
+/**
+ * The model streamed reasoning until it hit the token limit and never got to
+ * the answer. Typed so a caller can retry with a larger budget.
+ */
+export class EmptyReplyError extends Error {}
 
 /** Strip noise around JSON: reasoning-model think blocks and ``` fences. */
 function stripNoise(raw: string): string {
@@ -112,6 +123,60 @@ function parseGrammar(raw: string): GrammarEdit[] {
   return best
 }
 
+/**
+ * Max characters of text in one proofreading request. The reply's token budget
+ * has to cover the model's reasoning as well as the JSON of edits, and a
+ * reasoning model spends the more of it the longer the fragment is — a whole
+ * chapter in one request runs out of budget mid-reasoning and returns nothing.
+ * Models also proofread a long fragment noticeably less carefully.
+ */
+const GRAMMAR_CHUNK_CHARS = 4000
+
+/**
+ * Reply budget for one proofreading request. A chunk of the size above needs
+ * some 1500 tokens for a reasoning model, but the length of the reasoning
+ * varies a lot between runs on the same text, so the budget is generous — and
+ * a chunk that overruns it anyway is retried once with twice as much.
+ */
+const GRAMMAR_MAX_TOKENS = 8192
+
+/**
+ * Split the text into chunks of at most `limit` characters, preferring
+ * paragraph breaks, then sentence ends, and only then a hard cut. Chunks are
+ * verbatim slices: the model must quote fragments character for character for
+ * the edits to be matched back to the document.
+ */
+function splitForGrammar(text: string, limit: number): string[] {
+  if (text.length <= limit) return [text]
+
+  // Pieces small enough to be packed; anything still too long is cut harder.
+  const split = (parts: string[], separator: RegExp): string[] =>
+    parts.flatMap((part) =>
+      part.length <= limit ? [part] : part.split(separator).filter((p) => p.length > 0)
+    )
+  let pieces = split([text], /(?<=\n)/)
+  pieces = split(pieces, /(?<=[.!?…][»"')\]]?\s)/)
+  pieces = pieces.flatMap((part) => {
+    if (part.length <= limit) return [part]
+    const out: string[] = []
+    for (let i = 0; i < part.length; i += limit) out.push(part.slice(i, i + limit))
+    return out
+  })
+
+  // Greedily pack the pieces back up to the limit.
+  const chunks: string[] = []
+  let current = ''
+  for (const piece of pieces) {
+    if (current && current.length + piece.length > limit) {
+      chunks.push(current)
+      current = ''
+    }
+    current += piece
+  }
+  if (current) chunks.push(current)
+  return chunks.filter((c) => c.trim().length > 0)
+}
+
 abstract class BaseProvider implements AiProvider {
   abstract chat(messages: AiChatMessage[], opts?: ChatOptions): Promise<string>
   abstract listModels(): Promise<AiModelInfo[]>
@@ -130,6 +195,30 @@ abstract class BaseProvider implements AiProvider {
   }
 
   async checkGrammar(text: string, opts?: ChatOptions): Promise<GrammarEdit[]> {
+    // A long fragment is proofread in several requests; the edits of all of
+    // them are merged. Duplicates are not filtered out: a repeated typo is a
+    // separate edit, and the caller matches each one to its own occurrence.
+    const edits: GrammarEdit[] = []
+    const budget = opts?.maxTokens ?? GRAMMAR_MAX_TOKENS
+    for (const chunk of splitForGrammar(text, GRAMMAR_CHUNK_CHARS)) {
+      try {
+        edits.push(...(await this.checkGrammarChunk(chunk, opts, budget)))
+      } catch (error) {
+        // The reasoning ran away and ate the budget — one more try with twice
+        // as much before giving up on the whole check.
+        if (!(error instanceof EmptyReplyError)) throw error
+        edits.push(...(await this.checkGrammarChunk(chunk, opts, budget * 2)))
+      }
+    }
+    return edits
+  }
+
+  /** One proofreading request over a fragment that fits the token budget. */
+  private async checkGrammarChunk(
+    text: string,
+    opts: ChatOptions | undefined,
+    maxTokens: number
+  ): Promise<GrammarEdit[]> {
     const messages: AiChatMessage[] = [
       {
         role: 'system',
@@ -149,7 +238,7 @@ abstract class BaseProvider implements AiProvider {
       },
       { role: 'user', content: `Check the text and return a JSON array of edits:\n\n${text}` }
     ]
-    const raw = await this.chat(messages, { ...opts, maxTokens: opts?.maxTokens ?? 4096 })
+    const raw = await this.chat(messages, { ...opts, maxTokens })
     return parseGrammar(raw)
   }
 
@@ -284,6 +373,7 @@ class OpenAICompatProvider extends BaseProvider {
     const decoder = new TextDecoder()
     let buffer = ''
     let full = ''
+    let truncated = false
 
     for (;;) {
       const { value, done } = await reader.read()
@@ -298,18 +388,30 @@ class OpenAICompatProvider extends BaseProvider {
         if (data === '[DONE]') continue
         try {
           const json = JSON.parse(data) as {
-            choices?: Array<{ delta?: { content?: string } }>
+            choices?: Array<{
+              delta?: { content?: string; reasoning_content?: string; reasoning?: string }
+              finish_reason?: string | null
+            }>
           }
-          const delta = json.choices?.[0]?.delta?.content
+          const choice = json.choices?.[0]
+          if (choice?.finish_reason === 'length') truncated = true
+          const delta = choice?.delta?.content
           if (delta) {
             full += delta
             opts?.onDelta?.(delta)
+          } else if (choice?.delta?.reasoning_content || choice?.delta?.reasoning) {
+            // Field name differs by server: reasoning_content (DeepSeek,
+            // LM Studio) or reasoning (OpenRouter and others).
+            opts?.onThinking?.()
           }
         } catch {
           /* skip non-JSON lines (SSE comments) */
         }
       }
     }
+    // A reasoning model can burn the whole token budget on its reasoning and
+    // stream nothing into content. Silence looks like a hang, so report it.
+    if (!full && truncated) throw new EmptyReplyError(tMain('main.errEmptyReply'))
     return full
   }
 
