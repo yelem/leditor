@@ -11,7 +11,7 @@ import { findNodeTitle } from '@renderer/lib/tree'
 import { registerFlusher } from '@renderer/lib/flush-registry'
 import { useT } from '@renderer/lib/i18n'
 import { editorExtensions } from './extensions'
-import { wordSafeTabHtml } from './clipboard-tabs'
+import { restoreTabHtml, wordSafeTabHtml } from './clipboard-tabs'
 import { setTypographyConfig } from './typography'
 import { FormatToolbar } from './FormatToolbar'
 import { AppearancePopover } from './AppearancePopover'
@@ -118,7 +118,10 @@ export function Editor(): JSX.Element {
     extensions: editorExtensions,
     content: '',
     autofocus: false,
-    editorProps: { attributes: { class: 'editor__prose', spellcheck: 'true' } },
+    editorProps: {
+      attributes: { class: 'editor__prose', spellcheck: 'true' },
+      transformPastedHTML: restoreTabHtml
+    },
     onUpdate: ({ editor }) => onUpdateRef.current(editor)
   })
 

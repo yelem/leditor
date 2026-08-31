@@ -13,6 +13,7 @@ import TaskItem from '@tiptap/extension-task-item'
 import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import type { Extensions } from '@tiptap/react'
 import { TabIndent } from './tab-indent'
+import { EmptySelectAll } from './empty-select-all'
 import { InsertionMark, DeletionMark } from './suggestion-marks'
 import { SearchHighlight } from './search-extension'
 import { SmartTypography } from './typography'
@@ -52,6 +53,7 @@ export const editorExtensions: Extensions = [
   SearchHighlight,
   SmartTypography,
   TabIndent,
+  EmptySelectAll,
   Placeholder.configure({ placeholder: () => tGlobal('editor.placeholder') }),
   CharacterCount
 ]
