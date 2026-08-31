@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { NodeType, TreeNode } from '@shared/project-types'
 import { useProject } from '@renderer/store'
 import { indexTree, isDescendant } from '@renderer/lib/tree'
@@ -48,6 +48,7 @@ export function FileTree(): JSX.Element {
 
   const inputRef = useRef<HTMLInputElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLUListElement>(null)
 
   // Flat order of visible (non-collapsed) nodes — for range selection.
   const visibleOrder = useMemo(() => {
@@ -91,6 +92,23 @@ export function FileTree(): JSX.Element {
       window.removeEventListener('click', close)
       window.removeEventListener('keydown', onKey)
     }
+  }, [menu])
+
+  // Keep the context menu inside the window: opened on a row near the bottom
+  // edge it used to run off-screen, leaving its items unreachable. Measured
+  // after paint, since the size depends on which items are rendered.
+  useLayoutEffect(() => {
+    const el = menuRef.current
+    if (!menu || !el) return
+    const margin = 6
+    const { width, height } = el.getBoundingClientRect()
+    const x = Math.max(margin, Math.min(menu.x, window.innerWidth - width - margin))
+    // No room below — flip the menu above the cursor.
+    const y =
+      menu.y + height + margin > window.innerHeight
+        ? Math.max(margin, menu.y - height)
+        : menu.y
+    if (x !== menu.x || y !== menu.y) setMenu({ ...menu, x, y })
   }, [menu])
 
   const toggleCollapse = (id: string): void =>
@@ -477,6 +495,7 @@ export function FileTree(): JSX.Element {
 
       {menu && menuNode && (
         <ul
+          ref={menuRef}
           className="ctx"
           style={{ left: menu.x, top: menu.y }}
           onClick={(e) => e.stopPropagation()}
