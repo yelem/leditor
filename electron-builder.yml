@@ -52,6 +52,20 @@ mac:
   hardenedRuntime: true
   entitlements: resources/entitlements.mac.plist
   entitlementsInherit: resources/entitlements.mac.plist
+  # Usage strings for the TCC prompts the app can trigger: a project lives in a
+  # folder the user picks, which may be Documents/Desktop/Downloads, an external
+  # disk or a network share. Without these keys macOS shows a bare prompt.
+  extendInfo:
+    NSDocumentsFolderUsageDescription: >-
+      Leditor stores and opens book projects in folders you choose.
+    NSDesktopFolderUsageDescription: >-
+      Leditor stores and opens book projects in folders you choose.
+    NSDownloadsFolderUsageDescription: >-
+      Leditor stores and opens book projects in folders you choose.
+    NSRemovableVolumesUsageDescription: >-
+      Leditor opens book projects and writes backups on external disks you choose.
+    NSNetworkVolumesUsageDescription: >-
+      Leditor opens book projects and writes backups on network volumes you choose.
   # Notarization runs automatically when APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/
   # APPLE_TEAM_ID (or CSC_LINK signing identity) are set in the environment.
 dmg:
