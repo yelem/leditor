@@ -165,8 +165,9 @@ export default async function afterPack(context) {
   // an ad-hoc pass here would only be overwritten. Leave the bundle alone.
   if (process.env.CSC_LINK || process.env.CSC_NAME || process.env.CSC_IDENTITY) return
 
-  const appPath = join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`)
-  signBundle(appPath)
+  // Absolute: appOutDir is relative to the project, and codesign would read a
+  // leading "-" in any path handed to it as an option.
+  signBundle(resolve(context.appOutDir, `${context.packager.appInfo.productFilename}.app`))
 }
 
 // Direct invocation: `node scripts/adhoc-sign-mac.mjs <path to .app>`.
