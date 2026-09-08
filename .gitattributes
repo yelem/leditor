@@ -1,0 +1,5 @@
+# macOS entitlements are read by AMFI's XML parser inside codesign, which
+# rejects CRLF ("AMFIUnserializeXML: syntax error near line 1"). Windows
+# checkouts convert line endings by default (core.autocrlf), so pin the plists
+# to LF — otherwise a build started from a Windows working copy cannot sign.
+*.plist text eol=lf

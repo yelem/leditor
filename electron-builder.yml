@@ -2,6 +2,13 @@ appId: com.leditor.app
 productName: Leditor
 directories:
   buildResources: resources
+# macOS only (the hook returns immediately on other platforms). Without a
+# Developer ID electron-builder skips signing, leaving the bundle with the
+# linker's own signature (Identifier=Electron, no entitlements, no hardened
+# runtime). TCC cannot pin a grant to that, so file-access prompts come back on
+# every launch. The hook runs a real codesign pass with the ad-hoc identity, and
+# steps aside when CSC_LINK/CSC_NAME provide a genuine one.
+afterPack: scripts/adhoc-sign-mac.mjs
 publish:
   provider: github
   owner: yelem

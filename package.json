@@ -17,6 +17,7 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "icons": "node scripts/make-icons.mjs",
+    "sign:mac": "node scripts/adhoc-sign-mac.mjs",
     "dist:win": "electron-vite build && electron-builder --win",
     "dist:win:publish": "electron-vite build && electron-builder --win --publish always",
     "dist:mac": "electron-vite build && electron-builder --mac",
