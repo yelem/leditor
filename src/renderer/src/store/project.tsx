@@ -40,6 +40,8 @@ interface ProjectContextValue extends ProjectState {
   /** Change the project's writing-area settings (saved to project.json). */
   updateSettings: (partial: Partial<ProjectSettings>) => Promise<void>
   clearError: () => void
+  /** Show a background failure (auto-snapshot and the like) in the error banner. */
+  reportBackupError: (err: unknown) => void
 
   // Tree mutations (applied in main, return the updated manifest).
   createTreeNode: (
@@ -93,6 +95,12 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
   const stateRef = useRef(state)
   stateRef.current = state
 
+  const reportBackupError = useCallback(
+    (err: unknown) =>
+      setState((s) => ({ ...s, error: `${tGlobal('backups.error')}: ${errorMessage(err)}` })),
+    []
+  )
+
   const applyOpened = useCallback(
     (result: { projectPath: string; manifest: ProjectManifest }) => {
       localStorage.setItem(LAST_PROJECT_KEY, result.projectPath)
@@ -109,9 +117,9 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
         combinedScope: null
       }))
       // Snapshot on open (main decides based on settings).
-      void window.api.backup.projectOpened(result.projectPath).catch(() => undefined)
+      void window.api.backup.projectOpened(result.projectPath).catch(reportBackupError)
     },
-    []
+    [reportBackupError]
   )
 
   // Restore the last project on startup.
@@ -177,10 +185,12 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
 
   const closeProject = useCallback(() => {
     const path = stateRef.current.projectPath
-    if (path) void window.api.backup.projectClosing(path).catch(() => undefined)
+    // The state is reset right below, so the banner is the only way the failed
+    // on-close snapshot can be reported at all.
+    if (path) void window.api.backup.projectClosing(path).catch(reportBackupError)
     localStorage.removeItem(LAST_PROJECT_KEY)
     setState(INITIAL_STATE)
-  }, [])
+  }, [reportBackupError])
 
   const restoreBackup = useCallback(async (id: string): Promise<void> => {
     const path = stateRef.current.projectPath
@@ -377,6 +387,7 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
       saveManifest,
       updateSettings,
       clearError,
+      reportBackupError,
       createTreeNode,
       renameTreeNode,
       trashNodes,
@@ -400,6 +411,7 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
       saveManifest,
       updateSettings,
       clearError,
+      reportBackupError,
       createTreeNode,
       renameTreeNode,
       trashNodes,

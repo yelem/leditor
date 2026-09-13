@@ -22,7 +22,8 @@ export function AppLayout(): JSX.Element {
     resizeRight,
     setFocus
   } = useUi()
-  const { error, clearError, projectPath, combinedScope, openProjectByPath } = useProject()
+  const { error, clearError, reportBackupError, projectPath, combinedScope, openProjectByPath } =
+    useProject()
   const { settings } = useSettings()
   const backupInterval = settings.backup.intervalMinutes
 
@@ -58,17 +59,19 @@ export function AppLayout(): JSX.Element {
     }
   }, [openProjectByPath])
 
-  // Interval auto-snapshot while a project is open.
+  // Interval auto-snapshot while a project is open. A failure is shown in the
+  // error banner: silently skipped snapshots leave the project unprotected
+  // without any sign of it.
   useEffect(() => {
     if (!projectPath || backupInterval <= 0) return
     const id = setInterval(
       () => {
-        void window.api.backup.snapshot(projectPath, 'interval').catch(() => undefined)
+        void window.api.backup.snapshot(projectPath, 'interval').catch(reportBackupError)
       },
       backupInterval * 60 * 1000
     )
     return () => clearInterval(id)
-  }, [projectPath, backupInterval])
+  }, [projectPath, backupInterval, reportBackupError])
 
   const showLeft = !focusMode && !leftCollapsed
   const showRight = !focusMode && !rightCollapsed

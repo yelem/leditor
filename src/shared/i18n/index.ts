@@ -308,6 +308,7 @@ export const en = {
   'backups.reasonInterval': 'interval',
   'backups.reasonManual': 'manual',
   'backups.reasonPreRestore': 'before restore',
+  'backups.error': 'Backup failed',
 
   // --- Export ---
   'export.title': 'Export',
@@ -717,6 +718,7 @@ const uk: Record<TranslationKey, string> = {
   'backups.reasonInterval': 'за інтервалом',
   'backups.reasonManual': 'вручну',
   'backups.reasonPreRestore': 'перед відновленням',
+  'backups.error': 'Не вдалося створити копію',
 
   'export.title': 'Експорт',
   'export.format': 'Формат',
@@ -1117,6 +1119,7 @@ const ru: Record<TranslationKey, string> = {
   'backups.reasonInterval': 'по интервалу',
   'backups.reasonManual': 'вручную',
   'backups.reasonPreRestore': 'перед восстановлением',
+  'backups.error': 'Не удалось создать копию',
 
   'export.title': 'Экспорт',
   'export.format': 'Формат',

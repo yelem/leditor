@@ -41,6 +41,22 @@ function backupsDir(projectPath: string, customLocation: string): string {
 const snapshotDir = (projectPath: string, id: string, customLocation: string): string =>
   join(backupsDir(projectPath, customLocation), id)
 
+/**
+ * A leftover from an interrupted atomic write: `.<name>.<uuid>.tmp` next to
+ * the real file (see atomicWriteJson). Such files are not project data, and a
+ * damaged one (unreadable after a crash or a disk error) used to abort the
+ * whole snapshot — so they are skipped when copying.
+ */
+function isWriteLeftover(target: string): boolean {
+  const name = basename(target)
+  return name.startsWith('.') && name.endsWith('.tmp')
+}
+
+/** Copy a project subfolder, skipping interrupted-write leftovers. */
+async function copyTree(src: string, dest: string): Promise<void> {
+  await fs.cp(src, dest, { recursive: true, filter: (from) => !isWriteLeftover(from) })
+}
+
 async function pathExists(target: string): Promise<boolean> {
   try {
     await fs.access(target)
@@ -92,11 +108,11 @@ export async function createSnapshot(
 
   const contentSrc = join(projectPath, CONTENT_DIRNAME)
   if (await pathExists(contentSrc)) {
-    await fs.cp(contentSrc, join(dir, CONTENT_DIRNAME), { recursive: true })
+    await copyTree(contentSrc, join(dir, CONTENT_DIRNAME))
   }
   const notesSrc = join(projectPath, NOTES_DIRNAME)
   if (await pathExists(notesSrc)) {
-    await fs.cp(notesSrc, join(dir, NOTES_DIRNAME), { recursive: true })
+    await copyTree(notesSrc, join(dir, NOTES_DIRNAME))
   }
 
   const documentCount = collectDocumentIds(manifest.tree).length
@@ -104,8 +120,28 @@ export async function createSnapshot(
   await atomicWriteJson(join(dir, 'meta.json'), meta)
 
   await rotate(projectPath, maxBackups, customLocation)
+  await sweepLeftovers(projectPath)
 
   return { id, createdAt: meta.createdAt, reason, documentCount }
+}
+
+/**
+ * Delete interrupted-write leftovers from the project itself. Only those older
+ * than an hour: a fresh one may belong to a write happening right now.
+ */
+async function sweepLeftovers(projectPath: string): Promise<void> {
+  for (const sub of [CONTENT_DIRNAME, NOTES_DIRNAME]) {
+    const dir = join(projectPath, sub)
+    const entries = await fs.readdir(dir).catch(() => [])
+    for (const name of entries) {
+      if (!isWriteLeftover(name)) continue
+      const file = join(dir, name)
+      const stat = await fs.stat(file).catch(() => null)
+      if (stat && Date.now() - stat.mtimeMs > 3_600_000) {
+        await fs.rm(file, { force: true }).catch(() => undefined)
+      }
+    }
+  }
 }
 
 /** List of snapshots, newest first. */

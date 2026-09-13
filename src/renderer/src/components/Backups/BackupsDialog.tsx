@@ -35,12 +35,16 @@ export function BackupsDialog({ onClose }: { onClose: () => void }): JSX.Element
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState<BackupInfo | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
     if (!projectPath) return
     setLoading(true)
     try {
       setList(await window.api.backup.list(projectPath))
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
@@ -60,7 +64,10 @@ export function BackupsDialog({ onClose }: { onClose: () => void }): JSX.Element
     setBusy(true)
     try {
       await window.api.backup.snapshot(projectPath, 'manual')
+      setError(null)
       await reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }
@@ -71,7 +78,10 @@ export function BackupsDialog({ onClose }: { onClose: () => void }): JSX.Element
     setBusy(true)
     try {
       await window.api.backup.delete(projectPath, id)
+      setError(null)
       await reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }
@@ -83,6 +93,8 @@ export function BackupsDialog({ onClose }: { onClose: () => void }): JSX.Element
     try {
       await restoreBackup(id)
       onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }
@@ -104,6 +116,11 @@ export function BackupsDialog({ onClose }: { onClose: () => void }): JSX.Element
         </header>
 
         <div className="backups__body">
+          {error && (
+            <p className="backups__error">
+              {t('backups.error')}: {error}
+            </p>
+          )}
           {loading ? (
             <p className="backups__empty">{t('backups.loading')}</p>
           ) : list.length === 0 ? (

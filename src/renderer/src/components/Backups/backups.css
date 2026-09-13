@@ -66,6 +66,17 @@
   text-align: center;
 }
 
+.backups__error {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border: 1px solid #d05a52;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #d05a52;
+  word-break: break-word;
+}
+
 .backups__list {
   list-style: none;
   margin: 0;
