@@ -8,11 +8,26 @@ import { useT } from '@renderer/lib/i18n'
 import './file-tree.css'
 
 type DropPos = 'before' | 'inside' | 'after'
+
+/** Collapsed folders are remembered per project between launches. */
+const collapsedKey = (projectPath: string): string => `book-editor.collapsed:${projectPath}`
+
+function loadCollapsed(projectPath: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(collapsedKey(projectPath))
+    if (!raw) return new Set()
+    const parsed = JSON.parse(raw) as unknown
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [])
+  } catch {
+    return new Set()
+  }
+}
 type PermanentTarget = { type: 'one'; id: string; title: string } | { type: 'all' }
 
 export function FileTree(): JSX.Element {
   const t = useT()
   const {
+    projectPath,
     manifest,
     activeDocId,
     selectDocument,
@@ -63,6 +78,11 @@ export function FileTree(): JSX.Element {
     return out
   }, [tree, collapsed])
 
+  // Restore the collapsed folders of the project being opened.
+  useEffect(() => {
+    setCollapsed(projectPath ? loadCollapsed(projectPath) : new Set())
+  }, [projectPath])
+
   // Focus and select the text when entering rename mode.
   useEffect(() => {
     if (editingId) {
@@ -111,20 +131,32 @@ export function FileTree(): JSX.Element {
     if (x !== menu.x || y !== menu.y) setMenu({ ...menu, x, y })
   }, [menu])
 
-  const toggleCollapse = (id: string): void =>
-    setCollapsed((s) => {
-      const next = new Set(s)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+  // Write-through persistence: an effect would race the load below and
+  // overwrite the stored set with the empty initial one.
+  const applyCollapsed = (next: Set<string>): void => {
+    setCollapsed(next)
+    if (!projectPath) return
+    try {
+      // Drop ids of folders that no longer exist, so the entry cannot grow forever.
+      const ids = tree.length > 0 ? [...next].filter((id) => idx.nodeOf.has(id)) : [...next]
+      localStorage.setItem(collapsedKey(projectPath), JSON.stringify(ids))
+    } catch {
+      /* localStorage unavailable — ignore */
+    }
+  }
 
-  const expand = (id: string): void =>
-    setCollapsed((s) => {
-      if (!s.has(id)) return s
-      const next = new Set(s)
-      next.delete(id)
-      return next
-    })
+  const toggleCollapse = (id: string): void => {
+    const next = new Set(collapsed)
+    next.has(id) ? next.delete(id) : next.add(id)
+    applyCollapsed(next)
+  }
+
+  const expand = (id: string): void => {
+    if (!collapsed.has(id)) return
+    const next = new Set(collapsed)
+    next.delete(id)
+    applyCollapsed(next)
+  }
 
   // --- Selection ---
   const selectOnly = (id: string): void => {
