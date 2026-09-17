@@ -66,6 +66,16 @@ function extractProjectPath(argv: string[]): string | null {
   return null
 }
 
+/** Only http(s) and mailto links may be handed to the operating system. */
+function isSafeExternalUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url)
+    return protocol === 'http:' || protocol === 'https:' || protocol === 'mailto:'
+  } catch {
+    return false
+  }
+}
+
 /** Pass an open-project request to the renderer (or defer until the window is ready). */
 function requestOpenProject(projectPath: string): void {
   if (mainWindow && !mainWindow.webContents.isLoading()) {
@@ -84,17 +94,28 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     title: 'Leditor',
+    // Only in development: resources/ is electron-builder's buildResources
+    // folder, so it is not inside the packaged app — and a packaged build takes
+    // its icon from the executable (Windows) or the bundle (macOS) anyway.
     // Windows needs a multi-size .ico (16/24/32/48…): the title-bar icon
     // is taken from the matching size without scaling.
-    icon: join(
-      __dirname,
-      '../../resources',
-      process.platform === 'win32' ? 'icon.ico' : 'icon.png'
-    ),
+    ...(app.isPackaged
+      ? {}
+      : {
+          icon: join(
+            __dirname,
+            '../../resources',
+            process.platform === 'win32' ? 'icon.ico' : 'icon.png'
+          )
+        }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
-      // Architectural principle: the renderer is isolated from Node and the network.
+      // Architectural principle: the renderer is isolated from Node and the
+      // network. The OS sandbox is the layer under that — it is what contains
+      // a renderer compromised through Chromium itself, so the preload must
+      // stay free of node_modules imports (a sandboxed preload can only
+      // require 'electron').
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -202,9 +223,21 @@ function createWindow(): void {
     }
   })
 
-  // External links open in the system browser, not inside the window.
+  // Nothing may navigate the window away from the app itself: the UI is a
+  // single page and every link is external by definition.
+  win.webContents.on('will-navigate', (event, url) => {
+    if (url !== win.webContents.getURL()) {
+      event.preventDefault()
+      if (isSafeExternalUrl(url)) void shell.openExternal(url)
+    }
+  })
+
+  // External links open in the system browser, not inside the window. The URL
+  // can come from the manuscript (a pasted link), so hand only web schemes to
+  // the OS — file:, and on Windows anything the shell would execute, must not
+  // be launchable by opening a book.
   win.webContents.setWindowOpenHandler((details) => {
-    void shell.openExternal(details.url)
+    if (isSafeExternalUrl(details.url)) void shell.openExternal(details.url)
     return { action: 'deny' }
   })
 

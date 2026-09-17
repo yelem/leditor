@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
 import { IpcChannels, type AppApi } from '@shared/ipc-contract'
 import type { AiStreamEvent } from '@shared/ai-types'
 import type { ExportProgress } from '@shared/export-types'
@@ -138,17 +137,12 @@ const api: AppApi = {
   }
 }
 
-if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
-  } catch (error) {
-    console.error('Failed to expose API via contextBridge:', error)
-  }
-} else {
-  // Fallback path (contextIsolation should always be enabled).
-  // @ts-ignore — declared in src/preload/index.d.ts
-  window.electron = electronAPI
-  // @ts-ignore
-  window.api = api
+// window.api is the whole bridge: a fixed set of channels, nothing generic.
+// Deliberately no @electron-toolkit/preload `window.electron` here — it would
+// hand the renderer ipcRenderer.invoke() on arbitrary channels and undo the
+// point of a typed contract.
+try {
+  contextBridge.exposeInMainWorld('api', api)
+} catch (error) {
+  console.error('Failed to expose API via contextBridge:', error)
 }
