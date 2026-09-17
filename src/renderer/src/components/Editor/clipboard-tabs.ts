@@ -3,10 +3,10 @@
  * character in copied HTML gets dropped when pasted into Word — and even
  * when it survives (via `mso-tab-count`, see below), a raw tab is not what a
  * manuscript wants at the start of a paragraph: the professional equivalent
- * is a first-line indent set on the paragraph itself ("красная строка"), not
- * a character. So a run of tabs opening a block is converted to
- * `text-indent` on that block instead — Word's HTML importer maps this
- * straight to Paragraph > Indentation > First line.
+ * is a first-line indent set on the paragraph itself, not a character. So a
+ * run of tabs opening a block is converted to `text-indent` on that block
+ * instead — Word's HTML importer maps this straight to
+ * Paragraph > Indentation > First line.
  *
  * Any other (non-leading) tab is kept as a real tab via `mso-tab-count`, the
  * marker Word itself writes for tabs, so it isn't collapsed away either.

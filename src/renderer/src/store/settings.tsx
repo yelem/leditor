@@ -48,9 +48,12 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
     document.documentElement.setAttribute('data-theme', settings.theme)
   }, [settings.theme])
 
-  // Language for non-React consumers (editor placeholder, etc.).
+  // Language for non-React consumers (editor placeholder, etc.). The document
+  // lang follows it too: index.html can only carry a static one, and the
+  // engine reads the attribute for hyphenation and line breaking.
   useEffect(() => {
     setRendererLanguage(settings.language)
+    document.documentElement.lang = settings.language
   }, [settings.language])
 
   const persist = useCallback((next: GlobalSettings) => {

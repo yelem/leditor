@@ -100,10 +100,10 @@ function inlineRuns(nodes?: ProseMirrorNode[]): Run[] {
 }
 
 /**
- * A first-line indent ("красная строка") is typed in the editor as leading
- * tab characters. Exported as literal tabs they become a stray tab character
- * instead of a paragraph indent, so they are stripped off the text here and
- * re-applied as a real first-line indent by each format.
+ * A first-line indent is typed in the editor as leading tab characters.
+ * Exported as literal tabs they become a stray tab character instead of a
+ * paragraph indent, so they are stripped off the text here and re-applied as
+ * a real first-line indent by each format.
  */
 const INDENT_CM_PER_TAB = 1.25
 const INDENT_MM_PER_TAB = INDENT_CM_PER_TAB * 10
