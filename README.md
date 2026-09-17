@@ -43,7 +43,11 @@ fragments on request, using any AI provider you choose (including fully local on
 - **Automatic backups**: on open, on close, on an interval, and manual snapshots; rotation by count; one-click restore with a protective pre-restore snapshot.
 - All file writes are atomic; unsaved changes are flushed before the window closes.
 - API keys are stored encrypted in the OS keychain (Electron `safeStorage`) and never leave the main process.
-- No telemetry, no auto-updates, no network calls other than the AI requests you make.
+- No telemetry and no analytics: your text never leaves the machine except in the AI
+  requests you trigger yourself.
+- The only other network traffic is the update check against GitHub Releases on
+  startup. Updates download and install automatically; turn the whole thing off in
+  **Settings → Updates** and the app makes no requests of its own at all.
 
 ### Export & interface
 - Export to **Word (.docx)**, **FB2** and **EPUB** — whole project, per folder, per chapter, or the current chapter only.
@@ -69,7 +73,7 @@ Grab the installer from [Releases](../../releases), or build from source (below)
 
 ## Building from source
 
-Requirements: [Node.js](https://nodejs.org) 18+.
+Requirements: [Node.js](https://nodejs.org) 20.19+ or 22.12+ (what electron-vite 5 needs).
 
 ```bash
 npm install
@@ -108,8 +112,10 @@ App icons are generated from code — `npm run icons` rebuilds
 - [docx](https://github.com/dolanmiu/docx) and [JSZip](https://stuk.github.io/jszip/) for exports
 - `@anthropic-ai/sdk` for Claude; plain `fetch` + SSE for OpenAI-compatible providers
 
-The renderer is fully isolated (`contextIsolation`, no Node integration); all disk
-and network access goes through typed IPC handled by the main process.
+The renderer runs sandboxed, with `contextIsolation` on and no Node integration,
+under a strict Content-Security-Policy; all disk and network access goes through
+typed IPC handled by the main process. The preload exposes one fixed set of
+channels — never a generic `ipcRenderer`.
 
 ## License
 
