@@ -18,7 +18,12 @@ import {
 } from 'docx'
 import JSZip from 'jszip'
 import type { DocumentContent, ProseMirrorNode } from '@shared/project-types'
-import { type ExportMeta, type ExportStyle, PAGE_SIZES_MM } from '@shared/export-types'
+import {
+  type ExportMeta,
+  type ExportStyle,
+  DEFAULT_EXPORT_STYLE,
+  PAGE_SIZES_MM
+} from '@shared/export-types'
 
 export interface ExportSection {
   title: string
@@ -54,6 +59,27 @@ function primaryFont(cssStack: string): string {
 
 /** Strip characters that would break out of a CSS declaration. */
 const cssSafe = (value: string): string => value.replace(/[{}<>;]/g, '')
+
+/**
+ * A CSS length/ratio written into the EPUB stylesheet. The export style is
+ * typed, but it crosses IPC as plain JSON: a non-number here would be
+ * interpolated into the stylesheet verbatim and could close the <style>.
+ */
+const cssNumber = (value: unknown, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback
+
+/**
+ * Only real web links survive into the exported book. A reader that follows
+ * javascript:/file:/data: hrefs should not be handed one by us.
+ */
+function safeHref(href: string): string | null {
+  try {
+    const { protocol } = new URL(href)
+    return protocol === 'http:' || protocol === 'https:' || protocol === 'mailto:' ? href : null
+  } catch {
+    return null
+  }
+}
 
 interface Run {
   text: string
@@ -167,7 +193,8 @@ function xhtmlInline(runs: Run[]): string {
       if (r.underline) t = `<u>${t}</u>`
       if (r.italic) t = `<em>${t}</em>`
       if (r.bold) t = `<strong>${t}</strong>`
-      if (r.href) t = `<a href="${escAttr(r.href)}">${t}</a>`
+      const href = r.href ? safeHref(r.href) : null
+      if (href) t = `<a href="${escAttr(href)}">${t}</a>`
       return t
     })
     .join('')
@@ -227,7 +254,8 @@ function fb2Inline(runs: Run[]): string {
       if (r.italic) t = `<emphasis>${t}</emphasis>`
       if (r.bold) t = `<strong>${t}</strong>`
       if (r.strike) t = `<strikethrough>${t}</strikethrough>`
-      if (r.href) t = `<a l:href="${escAttr(r.href)}">${t}</a>`
+      const href = r.href ? safeHref(r.href) : null
+      if (href) t = `<a l:href="${escAttr(href)}">${t}</a>`
       return t
     })
     .join('')
@@ -331,9 +359,10 @@ ${bodyTitle}${sections}
 function runsToDocx(runs: Run[]): Array<TextRun | ExternalHyperlink> {
   return runs.map((r) => {
     if (r.br) return new TextRun({ text: '', break: 1 })
-    if (r.href) {
+    const href = r.href ? safeHref(r.href) : null
+    if (href) {
       return new ExternalHyperlink({
-        link: r.href,
+        link: href,
         children: [new TextRun({ text: r.text, style: 'Hyperlink' })]
       })
     }
@@ -593,10 +622,12 @@ export async function buildEpub(
     // Typography follows the export settings (the editor's by default).
     // No blanket p{text-indent}: the indent comes from the document itself
     // (leading tabs → inline text-indent), so paragraphs without one stay flush.
-    `body{font-family:${cssSafe(style.fontFamily)};font-size:${style.fontSizePt}pt;` +
-      `line-height:${style.lineHeight};margin:1em}` +
+    `body{font-family:${cssSafe(style.fontFamily)};` +
+      `font-size:${cssNumber(style.fontSizePt, DEFAULT_EXPORT_STYLE.fontSizePt)}pt;` +
+      `line-height:${cssNumber(style.lineHeight, DEFAULT_EXPORT_STYLE.lineHeight)};margin:1em}` +
       `h1{font-size:1.4em}` +
-      `p{margin:${style.spaceBeforePt}pt 0 ${style.spaceAfterPt}pt` +
+      `p{margin:${cssNumber(style.spaceBeforePt, DEFAULT_EXPORT_STYLE.spaceBeforePt)}pt 0 ` +
+      `${cssNumber(style.spaceAfterPt, DEFAULT_EXPORT_STYLE.spaceAfterPt)}pt` +
       `${style.justify ? ';text-align:justify' : ''}}` +
       // Hyphenation needs the language on <html> (set in chapterDoc) to work.
       (style.hyphenation
