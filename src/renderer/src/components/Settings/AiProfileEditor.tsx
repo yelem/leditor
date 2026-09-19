@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { AiProfile, AiProviderKind, AiTestResult } from '@shared/ai-types'
 import { AI_PRESETS, presetLabel } from '@renderer/lib/ai-presets'
 import { useT } from '@renderer/lib/i18n'
+import { ipcErrorText } from '@renderer/lib/ipc-error'
 
 interface AiProfileEditorProps {
   profile: AiProfile
@@ -49,7 +50,7 @@ export function AiProfileEditor({ profile, onSave, onCancel }: AiProfileEditorPr
     try {
       setTest(await window.api.ai.test(draft()))
     } catch (err) {
-      setTest({ ok: false, error: err instanceof Error ? err.message : String(err) })
+      setTest({ ok: false, error: ipcErrorText(err) })
     } finally {
       setBusy(null)
     }
@@ -61,7 +62,7 @@ export function AiProfileEditor({ profile, onSave, onCancel }: AiProfileEditorPr
       const list = await window.api.ai.listModels(draft())
       setModels(list.map((m) => m.id))
     } catch (err) {
-      setTest({ ok: false, error: err instanceof Error ? err.message : String(err) })
+      setTest({ ok: false, error: ipcErrorText(err) })
     } finally {
       setBusy(null)
     }

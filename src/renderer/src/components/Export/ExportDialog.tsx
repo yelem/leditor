@@ -13,16 +13,10 @@ import { DEFAULT_PROJECT_SETTINGS } from '@shared/project-types'
 import { useProject, useSettings } from '@renderer/store'
 import { type TranslationKey } from '@shared/i18n'
 import { useT } from '@renderer/lib/i18n'
+import { ipcErrorText } from '@renderer/lib/ipc-error'
 import { NumberField } from '@renderer/components/common/NumberField'
 import { FontSelect } from '@renderer/components/common/FontSelect'
 import './export.css'
-
-/** Electron wraps IPC failures — show only the message main actually sent. */
-function ipcErrorText(err: unknown): string {
-  const raw = err instanceof Error ? err.message : String(err)
-  const marker = raw.lastIndexOf('Error: ')
-  return marker >= 0 ? raw.slice(marker + 'Error: '.length) : raw
-}
 
 const FORMATS: Array<{ value: ExportFormat; label: string; hintKey: TranslationKey }> = [
   { value: 'docx', label: 'Word (.docx)', hintKey: 'export.docxHint' },

@@ -7,6 +7,7 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-contract'
 import {
+  type AiProfile,
   type AiChatMessage,
   type AiModelInfo,
   type AiProfileDraft,
@@ -42,9 +43,38 @@ async function activeProvider(): Promise<AiProvider> {
   })
 }
 
+/** Same endpoint, ignoring a trailing slash — as OpenAICompatProvider builds its URLs. */
+function sameEndpoint(saved: AiProfile, draft: AiProfileDraft): boolean {
+  if (saved.kind !== draft.kind) return false
+  // An anthropic profile always talks to the official API; baseUrl is unused.
+  if (draft.kind === 'anthropic') return true
+  const trim = (url: string): string => url.trim().replace(/\/+$/, '')
+  return trim(saved.baseUrl) === trim(draft.baseUrl ?? '')
+}
+
+/**
+ * Provider for an unsaved draft — the profile editor's "Test" and "Load models".
+ *
+ * The draft carries the endpoint to call *and* the id of the profile whose
+ * stored key may be reused, and both come from the renderer. They have to be
+ * checked against each other: otherwise a draft could name any saved profile
+ * together with any address, and main would send that profile's key there as a
+ * bearer token — the one way a key can leave the machine for somewhere the
+ * user never configured. So a stored key is reused only for the endpoint it
+ * was saved for; a changed address has to be tested with a key typed in.
+ */
 async function draftProvider(draft: AiProfileDraft): Promise<AiProvider> {
   let key = draft.apiKey ?? ''
-  if (!key && draft.profileId) key = (await getKey(draft.profileId)) ?? ''
+  if (!key && draft.profileId) {
+    const { ai } = await getSettings()
+    const saved = ai.profiles.find((p) => p.id === draft.profileId)
+    // No saved key — nothing to protect, and the draft may well be a local
+    // model that needs none: let the request go as it always did.
+    if (saved && (await hasKey(saved.id))) {
+      if (!sameEndpoint(saved, draft)) throw new Error(tMain('main.errKeyForNewUrl'))
+      key = (await getKey(saved.id)) ?? ''
+    }
+  }
   return createProvider(draft.kind, {
     apiKey: key,
     baseUrl: draft.baseUrl,
