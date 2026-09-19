@@ -381,6 +381,11 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     callback(allowedPermissions.has(permission))
   })
+  // Some APIs consult the permission *state* without ever raising a request;
+  // that path defaults to granted, so it needs the same answer as above.
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) =>
+    allowedPermissions.has(permission)
+  )
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

@@ -416,6 +416,9 @@ export const en = {
   'main.errBadNodeId': 'Invalid document identifier: {id}',
   'main.errNodeNotFound': 'Node to duplicate not found',
   'main.errSnapshotMissing': 'Backup not found or corrupted',
+  'main.errBadBackupId': 'Invalid backup identifier: {id}',
+  'main.errUnknownProject': 'An operation on a project that is not open in the app.',
+  'main.errUnknownFolder': 'This folder was not chosen through the app dialog.',
   'main.errExportLocked':
     '“{file}” is open in another program (Word, a reader). Close it and export again.',
   'main.errExportNoSpace': 'Not enough free space on the disk.',
@@ -423,6 +426,8 @@ export const en = {
   'main.errExportFailed': 'Could not write “{file}”: {detail}',
   'main.errNoActiveProfile': 'No active AI profile selected. Open Settings → Assistant.',
   'main.errNoKey': 'No API key set for profile “{name}”.',
+  'main.errKeyForNewUrl':
+    'The server address differs from the saved one — enter the API key for the new address.',
   'main.errServer': 'Server responded {status}',
   'main.errServerModels': 'Server responded {status} when requesting the model list',
   'main.errEmptyReply':
@@ -820,6 +825,9 @@ const uk: Record<TranslationKey, string> = {
   'main.errBadNodeId': 'Некоректний ідентифікатор документа: {id}',
   'main.errNodeNotFound': 'Вузол для дублювання не знайдено',
   'main.errSnapshotMissing': 'Знімок не знайдено або пошкоджено',
+  'main.errBadBackupId': 'Некоректний ідентифікатор знімка: {id}',
+  'main.errUnknownProject': 'Дія над проєктом, який не відкрито в застосунку.',
+  'main.errUnknownFolder': 'Цю папку не було вибрано через діалог застосунку.',
   'main.errExportLocked':
     '«{file}» відкрито в іншій програмі (Word, читалка). Закрийте його та повторіть експорт.',
   'main.errExportNoSpace': 'Недостатньо вільного місця на диску.',
@@ -827,6 +835,8 @@ const uk: Record<TranslationKey, string> = {
   'main.errExportFailed': 'Не вдалося записати «{file}»: {detail}',
   'main.errNoActiveProfile': 'Активний профіль ШІ не вибрано. Відкрийте «Налаштування → Асистент».',
   'main.errNoKey': 'Для профілю «{name}» не задано API-ключ.',
+  'main.errKeyForNewUrl':
+    'Адреса сервера відрізняється від збереженої — введіть API-ключ для нової адреси.',
   'main.errServer': 'Сервер відповів {status}',
   'main.errServerModels': 'Сервер відповів {status} на запит списку моделей',
   'main.errEmptyReply':
@@ -1221,6 +1231,9 @@ const ru: Record<TranslationKey, string> = {
   'main.errBadNodeId': 'Некорректный идентификатор документа: {id}',
   'main.errNodeNotFound': 'Узел для дублирования не найден',
   'main.errSnapshotMissing': 'Снапшот не найден или повреждён',
+  'main.errBadBackupId': 'Некорректный идентификатор снапшота: {id}',
+  'main.errUnknownProject': 'Действие над проектом, который не открыт в приложении.',
+  'main.errUnknownFolder': 'Эта папка не была выбрана через диалог приложения.',
   'main.errExportLocked':
     '«{file}» открыт в другой программе (Word, читалка). Закройте его и повторите экспорт.',
   'main.errExportNoSpace': 'Недостаточно свободного места на диске.',
@@ -1228,6 +1241,8 @@ const ru: Record<TranslationKey, string> = {
   'main.errExportFailed': 'Не удалось записать «{file}»: {detail}',
   'main.errNoActiveProfile': 'Не выбран активный ИИ-профиль. Откройте «Настройки → Ассистент».',
   'main.errNoKey': 'Для профиля «{name}» не задан API-ключ.',
+  'main.errKeyForNewUrl':
+    'Адрес сервера отличается от сохранённого — введите API-ключ для нового адреса.',
   'main.errServer': 'Сервер ответил {status}',
   'main.errServerModels': 'Сервер ответил {status} при запросе списка моделей',
   'main.errEmptyReply':

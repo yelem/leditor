@@ -13,6 +13,7 @@ import type { ProjectManifest } from '@shared/project-types'
 import { getSettings } from '../services/settings'
 import { createSnapshot, deleteSnapshot, listSnapshots, restoreSnapshot } from '../services/backup'
 import { withLock } from '../services/lock'
+import { assertProject } from '../services/allowed-paths'
 
 let currentProjectPath: string | null = null
 
@@ -30,7 +31,7 @@ function lockedSnapshot(
 
 export function registerBackupIpc(): void {
   ipcMain.handle(IpcChannels.backupProjectOpened, async (_event, projectPath: string) => {
-    currentProjectPath = projectPath
+    currentProjectPath = assertProject(projectPath)
     const { backup } = await getSettings()
     if (backup.onOpen) {
       await lockedSnapshot(projectPath, 'open', backup.maxBackups, backup.customLocation)
@@ -38,6 +39,7 @@ export function registerBackupIpc(): void {
   })
 
   ipcMain.handle(IpcChannels.backupProjectClosing, async (_event, projectPath: string) => {
+    assertProject(projectPath)
     const { backup } = await getSettings()
     if (backup.onClose) {
       await lockedSnapshot(projectPath, 'close', backup.maxBackups, backup.customLocation)
@@ -48,6 +50,7 @@ export function registerBackupIpc(): void {
   ipcMain.handle(
     IpcChannels.backupSnapshot,
     async (_event, projectPath: string, reason: BackupReason): Promise<BackupInfo> => {
+      assertProject(projectPath)
       const { backup } = await getSettings()
       return lockedSnapshot(projectPath, reason, backup.maxBackups, backup.customLocation)
     }
@@ -55,14 +58,14 @@ export function registerBackupIpc(): void {
 
   ipcMain.handle(IpcChannels.backupList, async (_event, projectPath: string): Promise<BackupInfo[]> => {
     const { backup } = await getSettings()
-    return listSnapshots(projectPath, backup.customLocation)
+    return listSnapshots(assertProject(projectPath), backup.customLocation)
   })
 
   ipcMain.handle(
     IpcChannels.backupRestore,
     async (_event, projectPath: string, id: string): Promise<ProjectManifest> => {
       const { backup } = await getSettings()
-      return withLock(projectPath, () =>
+      return withLock(assertProject(projectPath), () =>
         restoreSnapshot(projectPath, id, backup.maxBackups, backup.customLocation)
       )
     }
@@ -70,7 +73,7 @@ export function registerBackupIpc(): void {
 
   ipcMain.handle(IpcChannels.backupDelete, async (_event, projectPath: string, id: string) => {
     const { backup } = await getSettings()
-    return deleteSnapshot(projectPath, id, backup.customLocation)
+    return deleteSnapshot(assertProject(projectPath), id, backup.customLocation)
   })
 }
 

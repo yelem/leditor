@@ -38,8 +38,23 @@ function backupsDir(projectPath: string, customLocation: string): string {
   return join(customLocation, `${base}-${hash}`)
 }
 
+/**
+ * Shape of a snapshot folder name, as timestampId() below writes it
+ * (plus the numeric suffix used when two land in the same millisecond).
+ * The id arrives from the renderer and is joined onto a path that is then
+ * removed recursively, so anything else — above all `..` — is refused.
+ */
+const BACKUP_ID_PATTERN = /^\d{8}-\d{6}-\d{3}(?:-\d+)?$/
+
+function safeBackupId(id: string): string {
+  if (typeof id !== 'string' || !BACKUP_ID_PATTERN.test(id)) {
+    throw new Error(tMain('main.errBadBackupId', { id: JSON.stringify(id).slice(0, 80) }))
+  }
+  return id
+}
+
 const snapshotDir = (projectPath: string, id: string, customLocation: string): string =>
-  join(backupsDir(projectPath, customLocation), id)
+  join(backupsDir(projectPath, customLocation), safeBackupId(id))
 
 /**
  * A leftover from an interrupted atomic write: `.<name>.<uuid>.tmp` next to
@@ -156,7 +171,7 @@ export async function listSnapshots(
   const infos: BackupInfo[] = []
 
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue
+    if (!entry.isDirectory() || !BACKUP_ID_PATTERN.test(entry.name)) continue
     const id = entry.name
     let meta: SnapshotMeta | null = null
     try {
@@ -196,6 +211,7 @@ async function rotate(projectPath: string, maxBackups: number, customLocation: s
     const entries = await fs.readdir(root, { withFileTypes: true })
     for (const entry of entries) {
       if (!entry.isDirectory() || complete.has(entry.name)) continue
+      if (!BACKUP_ID_PATTERN.test(entry.name)) continue
       const stat = await fs.stat(join(root, entry.name)).catch(() => null)
       if (stat && Date.now() - stat.mtimeMs > 3_600_000) {
         await fs.rm(join(root, entry.name), { recursive: true, force: true })

@@ -48,6 +48,7 @@ import {
   writeManifest
 } from '../services/storage'
 import { withLock } from '../services/lock'
+import { assertProject, rememberProject } from '../services/allowed-paths'
 import { tMain } from '../i18n'
 
 /** Ensures the .bookproj extension on the path and derives the project title. */
@@ -80,6 +81,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
       part: tMain('main.part1')
     })
     await createProject(projectPath, manifest)
+    rememberProject(projectPath)
     return { projectPath, manifest }
   })
 
@@ -98,13 +100,17 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
 
     const projectPath = result.filePaths[0]
     const manifest = await readManifest(projectPath)
+    rememberProject(projectPath)
     return { projectPath, manifest }
   })
 
   ipcMain.handle(
     IpcChannels.projectOpenPath,
     async (_event, projectPath: string): Promise<OpenProjectResult> => {
+      // The only entry point that takes a path the renderer chose (a recent
+      // project, a launch argument). A readable manifest is what admits it.
       const manifest = await readManifest(projectPath)
+      rememberProject(projectPath)
       return { projectPath, manifest }
     }
   )
@@ -112,14 +118,14 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(
     IpcChannels.projectSave,
     async (_event, projectPath: string, manifest: ProjectManifest): Promise<ProjectManifest> => {
-      return withLock(projectPath, () => writeManifest(projectPath, manifest))
+      return withLock(assertProject(projectPath), () => writeManifest(projectPath, manifest))
     }
   )
 
   ipcMain.handle(
     IpcChannels.projectStats,
     async (_event, projectPath: string): Promise<ProjectStats> => {
-      const manifest = await readManifest(projectPath)
+      const manifest = await readManifest(assertProject(projectPath))
       let words = 0
       let chars = 0
       for (const docId of collectDocumentIds(manifest.tree)) {
@@ -136,7 +142,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(
     IpcChannels.documentLoad,
     async (_event, projectPath: string, nodeId: string): Promise<DocumentContent | null> => {
-      return readDocument(projectPath, nodeId)
+      return readDocument(assertProject(projectPath), nodeId)
     }
   )
 
@@ -148,7 +154,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
       nodeId: string,
       content: DocumentContent
     ): Promise<void> => {
-      await writeDocument(projectPath, nodeId, content)
+      await writeDocument(assertProject(projectPath), nodeId, content)
     }
   )
 
@@ -165,7 +171,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
       title: string,
       index?: number
     ): Promise<CreateNodeResult> =>
-      withLock(projectPath, async () => {
+      withLock(assertProject(projectPath), async () => {
         const manifest = await readManifest(projectPath)
         const node = createNode(type, title)
         const tree = insertNode(manifest.tree, node, parentId, index)
@@ -180,7 +186,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(
     IpcChannels.treeRename,
     async (_event, projectPath: string, nodeId: string, title: string): Promise<ProjectManifest> =>
-      withLock(projectPath, async () => {
+      withLock(assertProject(projectPath), async () => {
         const manifest = await readManifest(projectPath)
         const tree = renameNode(manifest.tree, nodeId, title)
         return writeManifest(projectPath, { ...manifest, tree })
@@ -190,7 +196,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(
     IpcChannels.treeRemove,
     async (_event, projectPath: string, nodeId: string): Promise<ProjectManifest> =>
-      withLock(projectPath, async () => {
+      withLock(assertProject(projectPath), async () => {
         const manifest = await readManifest(projectPath)
         const { tree, removed } = removeNode(manifest.tree, nodeId)
         const saved = await writeManifest(projectPath, { ...manifest, tree })
@@ -214,7 +220,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
       newParentId: string | null,
       index: number
     ): Promise<ProjectManifest> =>
-      withLock(projectPath, async () => {
+      withLock(assertProject(projectPath), async () => {
         const manifest = await readManifest(projectPath)
         const tree = moveNode(manifest.tree, nodeId, newParentId, index)
         return writeManifest(projectPath, { ...manifest, tree })
@@ -224,7 +230,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(
     IpcChannels.treeDuplicate,
     async (_event, projectPath: string, nodeId: string): Promise<CreateNodeResult> =>
-      withLock(projectPath, async () => {
+      withLock(assertProject(projectPath), async () => {
         const manifest = await readManifest(projectPath)
         const original = findNode(manifest.tree, nodeId)
         if (!original) {
@@ -258,7 +264,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(
     IpcChannels.trashMove,
     async (_event, projectPath: string, nodeIds: string[]): Promise<ProjectManifest> =>
-      withLock(projectPath, async () => {
+      withLock(assertProject(projectPath), async () => {
         const manifest = await readManifest(projectPath)
         // Files are NOT touched — they are needed for restoration.
         return writeManifest(projectPath, trashNodes(manifest, nodeIds))
@@ -268,7 +274,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(
     IpcChannels.trashRestore,
     async (_event, projectPath: string, nodeId: string): Promise<ProjectManifest> =>
-      withLock(projectPath, async () => {
+      withLock(assertProject(projectPath), async () => {
         const manifest = await readManifest(projectPath)
         return writeManifest(projectPath, restoreFromTrash(manifest, nodeId))
       })
@@ -277,7 +283,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(
     IpcChannels.trashDelete,
     async (_event, projectPath: string, nodeId: string): Promise<ProjectManifest> =>
-      withLock(projectPath, async () => {
+      withLock(assertProject(projectPath), async () => {
         const manifest = await readManifest(projectPath)
         const { manifest: next, removed } = removeFromTrash(manifest, nodeId)
         const saved = await writeManifest(projectPath, next)
@@ -289,7 +295,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(
     IpcChannels.trashEmpty,
     async (_event, projectPath: string): Promise<ProjectManifest> =>
-      withLock(projectPath, async () => {
+      withLock(assertProject(projectPath), async () => {
         const manifest = await readManifest(projectPath)
         const { manifest: next, removed } = emptyTrash(manifest)
         const saved = await writeManifest(projectPath, next)
