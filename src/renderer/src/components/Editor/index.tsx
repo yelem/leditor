@@ -12,6 +12,7 @@ import { registerFlusher } from '@renderer/lib/flush-registry'
 import { useT } from '@renderer/lib/i18n'
 import { editorExtensions } from './extensions'
 import { restoreTabHtml, wordSafeTabHtml } from './clipboard-tabs'
+import { clipboardFragment } from './clipboard-fragment'
 import { setTypographyConfig } from './typography'
 import { FormatToolbar } from './FormatToolbar'
 import { AppearancePopover } from './AppearancePopover'
@@ -120,7 +121,7 @@ export function Editor(): JSX.Element {
     autofocus: false,
     editorProps: {
       attributes: { class: 'editor__prose', spellcheck: 'true' },
-      transformPastedHTML: restoreTabHtml
+      transformPastedHTML: (html) => restoreTabHtml(clipboardFragment(html))
     },
     onUpdate: ({ editor }) => onUpdateRef.current(editor)
   })

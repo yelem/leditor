@@ -10,6 +10,7 @@ import { registerFlusher } from '@renderer/lib/flush-registry'
 import { useT, tGlobal } from '@renderer/lib/i18n'
 import { NumberField } from '@renderer/components/common/NumberField'
 import { Icon, type IconName } from '../Editor/Icons'
+import { clipboardFragment } from '../Editor/clipboard-fragment'
 import { FontSize } from './font-size'
 import './notes.css'
 
@@ -79,7 +80,10 @@ export function NotesPanel(): JSX.Element {
   const editor = useEditor({
     extensions: notesExtensions,
     content: '',
-    editorProps: { attributes: { class: 'notes__prose', spellcheck: 'true' } },
+    editorProps: {
+      attributes: { class: 'notes__prose', spellcheck: 'true' },
+      transformPastedHTML: clipboardFragment
+    },
     onUpdate: ({ editor }) => onUpdateRef.current(editor)
   })
 
