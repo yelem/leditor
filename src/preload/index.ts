@@ -65,6 +65,7 @@ const api: AppApi = {
   },
   export: {
     run: (projectPath, options) => ipcRenderer.invoke(IpcChannels.exportRun, projectPath, options),
+    lastDir: (projectPath) => ipcRenderer.invoke(IpcChannels.exportLastDir, projectPath),
     onProgress: (callback) => {
       const listener = (_e: unknown, progress: ExportProgress): void => callback(progress)
       ipcRenderer.on(IpcChannels.exportProgress, listener)

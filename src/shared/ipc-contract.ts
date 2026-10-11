@@ -92,6 +92,8 @@ export const IpcChannels = {
   exportRun: 'export:run',
   /** Export progress (main → renderer). */
   exportProgress: 'export:progress',
+  /** Folder the project last exported to, re-admitted for export (or null). */
+  exportLastDir: 'export:lastDir',
   /** Request to open a project by path (double click/association/argument). */
   appOpenProject: 'app:openProject',
   /** Window is closing: renderer must flush unsaved changes (main → renderer). */
@@ -221,6 +223,8 @@ export interface DialogApi {
 /** Project export API. */
 export interface ExportApi {
   run: (projectPath: string, options: ExportOptions) => Promise<ExportResult>
+  /** Folder this project last exported to (or the last one used at all), if it still exists. */
+  lastDir: (projectPath: string) => Promise<string | null>
   /** Subscribe to export progress. Returns an unsubscribe function. */
   onProgress: (callback: (progress: ExportProgress) => void) => () => void
 }

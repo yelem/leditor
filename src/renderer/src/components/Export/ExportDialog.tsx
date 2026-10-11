@@ -103,6 +103,22 @@ export function ExportDialog({ onClose, selectionIds }: ExportDialogProps): JSX.
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // Preselect the folder this project exported to last time. A folder the
+  // user already picked in the meantime wins.
+  useEffect(() => {
+    if (!projectPath) return
+    let cancelled = false
+    window.api.export
+      .lastDir(projectPath)
+      .then((dir) => {
+        if (!cancelled && dir) setOutputDir((current) => current || dir)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [projectPath])
+
   // Subscribe to export progress.
   useEffect(() => window.api.export.onProgress(setProgress), [])
 
