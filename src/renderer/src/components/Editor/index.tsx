@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor, type Editor as TipTapEditor } from '@tiptap/react'
+import type { Node as PMNode } from '@tiptap/pm/model'
 import {
   type DocumentContent,
   type ProjectStats,
@@ -18,6 +19,7 @@ import { FormatToolbar } from './FormatToolbar'
 import { AppearancePopover } from './AppearancePopover'
 import { FindBar } from './FindBar'
 import { SuggestionsReview } from './SuggestionsReview'
+import { getScrollPosition, persistScrollPositions, setScrollPosition } from './scroll-memory'
 import {
   type SuggestionItem,
   acceptSuggestion,
@@ -65,12 +67,19 @@ export function Editor(): JSX.Element {
   const reasonsRef = useRef<Map<string, string>>(new Map())
 
   const scrollRef = useRef<HTMLDivElement>(null)
-  const pendingRef = useRef<{ docId: string; json: DocumentContent } | null>(null)
+  // Unsaved edits. `doc` is ProseMirror's immutable document snapshot: keeping
+  // it costs nothing per keystroke, and it is serialized only when written.
+  // The project path is captured too — switching projects must not write the
+  // old chapter into the new project's folder.
+  const pendingRef = useRef<{ path: string; docId: string; doc: PMNode } | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const countTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pathRef = useRef(projectPath)
-  const docIdRef = useRef(activeDocId)
   pathRef.current = projectPath
-  docIdRef.current = activeDocId
+  // The document whose contents the editor currently shows. It lags behind
+  // activeDocId while the next chapter loads; null during that gap, so neither
+  // edits nor scroll offsets get attributed to the wrong chapter.
+  const loadedDocIdRef = useRef<string | null>(null)
 
   const refreshProjectStats = useCallback(() => {
     const path = pathRef.current
@@ -85,9 +94,13 @@ export function Editor(): JSX.Element {
     }
     const pending = pendingRef.current
     pendingRef.current = null
-    if (!pending || !pathRef.current) return
+    if (!pending) return
     try {
-      await window.api.document.save(pathRef.current, pending.docId, pending.json)
+      await window.api.document.save(
+        pending.path,
+        pending.docId,
+        pending.doc.toJSON() as DocumentContent
+      )
       setStatus('saved')
       refreshProjectStats()
       bumpDocVersion()
@@ -123,14 +136,24 @@ export function Editor(): JSX.Element {
       attributes: { class: 'editor__prose', spellcheck: 'true' },
       transformPastedHTML: (html) => restoreTabHtml(clipboardFragment(html))
     },
-    onUpdate: ({ editor }) => onUpdateRef.current(editor)
+    onUpdate: ({ editor }) => onUpdateRef.current(editor),
+    // Components that show live editor state subscribe to it themselves
+    // (FormatToolbar, FindBar). Re-rendering this whole component on every
+    // keystroke was a needless cost on long chapters.
+    shouldRerenderOnTransaction: false
   })
 
   onUpdateRef.current = (ed: TipTapEditor) => {
-    updateDocCount(ed)
-    const docId = docIdRef.current
-    if (!pathRef.current || !docId) return
-    pendingRef.current = { docId, json: ed.getJSON() as DocumentContent }
+    // Word counting walks the whole chapter — do it once typing pauses.
+    if (countTimerRef.current) clearTimeout(countTimerRef.current)
+    countTimerRef.current = setTimeout(() => {
+      countTimerRef.current = null
+      if (!ed.isDestroyed) updateDocCount(ed)
+    }, 300)
+    const docId = loadedDocIdRef.current
+    const path = pathRef.current
+    if (!path || !docId) return
+    pendingRef.current = { path, docId, doc: ed.state.doc }
     setStatus('saving')
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
@@ -160,6 +183,7 @@ export function Editor(): JSX.Element {
   // Load contents on document switch; save the previous one on leave.
   useEffect(() => {
     if (!editor) return
+    loadedDocIdRef.current = null
     if (!projectPath || !activeDocId) {
       editor.commands.clearContent()
       setDocCount({ words: 0, chars: 0 })
@@ -170,8 +194,13 @@ export function Editor(): JSX.Element {
     window.api.document
       .load(projectPath, activeDocId)
       .then((doc) => {
-        if (cancelled) return
+        if (cancelled || editor.isDestroyed) return
         editor.commands.setContent(doc ?? createEmptyDocument(), false)
+        // ProseMirror renders synchronously, so the new height is already
+        // there: put the chapter back where it was left.
+        const scroll = scrollRef.current
+        if (scroll) scroll.scrollTop = getScrollPosition(projectPath, activeDocId)
+        loadedDocIdRef.current = activeDocId
         updateDocCount(editor)
         // Restore unfinished suggestions from the document.
         setSuggestions(collectSuggestions(editor, reasonsRef.current))
@@ -179,9 +208,35 @@ export function Editor(): JSX.Element {
       .catch(() => undefined)
     return () => {
       cancelled = true
+      loadedDocIdRef.current = null
+      // Still holds this chapter's edits: the next one is not loaded yet.
       void flushSave()
     }
   }, [editor, projectPath, activeDocId, flushSave, updateDocCount])
+
+  // Track the scroll offset of the chapter on screen. Ignored while a chapter
+  // is being swapped in — the browser clamps the offset to the new length and
+  // reports that as a scroll.
+  useEffect(() => {
+    const scroll = scrollRef.current
+    if (!scroll || !projectPath) return
+    const onScroll = (): void => {
+      const docId = loadedDocIdRef.current
+      if (docId) setScrollPosition(projectPath, docId, scroll.scrollTop)
+    }
+    scroll.addEventListener('scroll', onScroll, { passive: true })
+    return () => scroll.removeEventListener('scroll', onScroll)
+  }, [projectPath])
+
+  useEffect(() => registerFlusher(persistScrollPositions), [])
+
+  // Pending word-count timer must not outlive the editor.
+  useEffect(
+    () => () => {
+      if (countTimerRef.current) clearTimeout(countTimerRef.current)
+    },
+    []
+  )
 
   // Whole-project stats when a project opens.
   useEffect(() => {

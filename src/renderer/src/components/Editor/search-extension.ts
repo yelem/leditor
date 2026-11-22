@@ -31,20 +31,49 @@ declare module '@tiptap/core' {
   }
 }
 
+/**
+ * Find all occurrences of the query in the document's text. Runs on every
+ * edit while a search is active, so it works per text node (one string and
+ * two numbers each) rather than per character.
+ */
 function computeMatches(doc: PMNode, query: string, caseSensitive: boolean): Match[] {
   if (!query) return []
-  const chars: Array<{ pos: number; ch: string }> = []
+  const texts: string[] = []
+  const nodePos: number[] = [] // document position of each text node
+  const offsets: number[] = [] // its start offset in the joined haystack
+  let length = 0
   doc.descendants((node, pos) => {
     if (node.isText && typeof node.text === 'string') {
-      for (let i = 0; i < node.text.length; i++) chars.push({ pos: pos + i, ch: node.text[i] })
+      texts.push(node.text)
+      nodePos.push(pos)
+      offsets.push(length)
+      length += node.text.length
     }
   })
-  const hay = caseSensitive ? chars.map((c) => c.ch).join('') : chars.map((c) => c.ch).join('').toLowerCase()
+  if (texts.length === 0) return []
+  const joined = texts.join('')
+  // toLowerCase keeps the length for the scripts used here (Cyrillic, Latin),
+  // so offsets stay aligned with the original text.
+  const hay = caseSensitive ? joined : joined.toLowerCase()
   const needle = caseSensitive ? query : query.toLowerCase()
+  if (hay.length !== joined.length) return []
+
+  // Haystack offset → document position (binary search over text nodes).
+  const toPos = (offset: number): number => {
+    let lo = 0
+    let hi = offsets.length - 1
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1
+      if (offsets[mid] <= offset) lo = mid
+      else hi = mid - 1
+    }
+    return nodePos[lo] + (offset - offsets[lo])
+  }
+
   const matches: Match[] = []
   let idx = hay.indexOf(needle)
   while (idx !== -1) {
-    matches.push({ from: chars[idx].pos, to: chars[idx + needle.length - 1].pos + 1 })
+    matches.push({ from: toPos(idx), to: toPos(idx + needle.length - 1) + 1 })
     idx = hay.indexOf(needle, idx + needle.length)
   }
   return matches

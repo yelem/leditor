@@ -76,6 +76,9 @@ const contentDir = (projectPath: string): string => join(projectPath, CONTENT_DI
 const documentPath = (projectPath: string, nodeId: string): string =>
   join(contentDir(projectPath), `${safeNodeId(nodeId)}.json`)
 
+/** Path of a document's content file (node id validated). */
+export const documentFilePath = documentPath
+
 /**
  * Create a new project on disk: folder structure, manifest, and empty content
  * files for every document node of the starter tree.

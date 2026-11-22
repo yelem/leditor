@@ -18,8 +18,8 @@ import {
   PROJECT_EXTENSION,
   createEmptyDocument
 } from '@shared/project-types'
-import { countDocument } from '@shared/document-text'
 import { getSettings } from '../services/settings'
+import { projectStats, rememberDocumentStats } from '../services/doc-stats'
 import { IpcChannels, type CreateNodeResult } from '@shared/ipc-contract'
 import {
   collectDocumentIds,
@@ -126,16 +126,7 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
     IpcChannels.projectStats,
     async (_event, projectPath: string): Promise<ProjectStats> => {
       const manifest = await readManifest(assertProject(projectPath))
-      let words = 0
-      let chars = 0
-      for (const docId of collectDocumentIds(manifest.tree)) {
-        const content = await readDocument(projectPath, docId)
-        if (!content) continue
-        const c = countDocument(content)
-        words += c.words
-        chars += c.chars
-      }
-      return { words, chars }
+      return projectStats(projectPath, collectDocumentIds(manifest.tree))
     }
   )
 
@@ -154,7 +145,14 @@ export function registerProjectIpc(getWindow: () => BrowserWindow | null): void 
       nodeId: string,
       content: DocumentContent
     ): Promise<void> => {
-      await writeDocument(assertProject(projectPath), nodeId, content)
+      // Serialized per document: two saves of the same chapter in flight
+      // (a debounce flush and a chapter switch) must land in the order they
+      // were sent — otherwise the older content could be renamed in last.
+      const key = `${assertProject(projectPath)}\u0000doc\u0000${nodeId}`
+      await withLock(key, async () => {
+        await writeDocument(projectPath, nodeId, content)
+        await rememberDocumentStats(projectPath, nodeId, content)
+      })
     }
   )
 

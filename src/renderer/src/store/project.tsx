@@ -22,8 +22,6 @@ interface ProjectState {
   activeDocId: string | null
   busy: boolean
   error: string | null
-  /** Document-save counter — triggers chat context recomputation. */
-  docVersion: number
   /** Active combined view (or null — the regular editor). */
   combinedScope: CombinedScope | null
 }
@@ -79,11 +77,11 @@ const INITIAL_STATE: ProjectState = {
   activeDocId: null,
   busy: false,
   error: null,
-  docVersion: 0,
   combinedScope: null
 }
 
 const ProjectContext = createContext<ProjectContextValue | null>(null)
+const DocVersionContext = createContext(0)
 
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message
@@ -92,6 +90,9 @@ function errorMessage(err: unknown): string {
 
 export function ProjectProvider({ children }: { children: ReactNode }): JSX.Element {
   const [state, setState] = useState<ProjectState>(INITIAL_STATE)
+  // Kept out of the main context value: it changes on every autosave and only
+  // the chat panel cares. Inside the main value it re-rendered the whole app.
+  const [docVersion, setDocVersion] = useState(0)
   const stateRef = useRef(state)
   stateRef.current = state
 
@@ -107,15 +108,15 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
       // Restore the last open chapter if it still exists.
       const lastDoc = localStorage.getItem(lastDocKey(result.projectPath))
       const activeDocId = lastDoc && findNode(result.manifest.tree, lastDoc) ? lastDoc : null
-      setState((s) => ({
+      setState({
         projectPath: result.projectPath,
         manifest: result.manifest,
         activeDocId,
         busy: false,
         error: null,
-        docVersion: s.docVersion + 1,
         combinedScope: null
-      }))
+      })
+      setDocVersion((v) => v + 1)
       // Snapshot on open (main decides based on settings).
       void window.api.backup.projectOpened(result.projectPath).catch(reportBackupError)
     },
@@ -246,10 +247,7 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
 
   const clearError = useCallback(() => setState((s) => ({ ...s, error: null })), [])
 
-  const bumpDocVersion = useCallback(
-    () => setState((s) => ({ ...s, docVersion: s.docVersion + 1 })),
-    []
-  )
+  const bumpDocVersion = useCallback(() => setDocVersion((v) => v + 1), [])
 
   const createTreeNode = useCallback(
     async (
@@ -427,7 +425,16 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
     ]
   )
 
-  return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
+  return (
+    <ProjectContext.Provider value={value}>
+      <DocVersionContext.Provider value={docVersion}>{children}</DocVersionContext.Provider>
+    </ProjectContext.Provider>
+  )
+}
+
+/** Document-save counter: changes after each chapter autosave. */
+export function useDocVersion(): number {
+  return useContext(DocVersionContext)
 }
 
 export function useProject(): ProjectContextValue {

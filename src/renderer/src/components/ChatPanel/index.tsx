@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import type { AiChatMessage } from '@shared/ai-types'
 import { documentToText } from '@shared/document-text'
-import { useProject, useSettings } from '@renderer/store'
+import { useDocVersion, useProject, useSettings } from '@renderer/store'
 import { collectDocuments, findNodeTitle } from '@renderer/lib/tree'
 import { useT } from '@renderer/lib/i18n'
 import './chat-panel.css'
@@ -81,7 +81,8 @@ function setLastAssistant(messages: AiChatMessage[], updater: (prev: string) => 
 
 export function ChatPanel(): JSX.Element {
   const t = useT()
-  const { projectPath, manifest, activeDocId, docVersion } = useProject()
+  const { projectPath, manifest, activeDocId } = useProject()
+  const docVersion = useDocVersion()
   const { settings } = useSettings()
 
   const [messages, setMessages] = useState<AiChatMessage[]>([])

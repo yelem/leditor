@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { Editor } from '@tiptap/react'
+import { useEditorState, type Editor } from '@tiptap/react'
 import { Icon, type IconName } from './Icons'
 import { useT } from '@renderer/lib/i18n'
+
+const MARKS = ['bold', 'italic', 'underline', 'strike', 'code', 'highlight', 'link', 'superscript', 'subscript']
+const BLOCKS = ['paragraph', 'bulletList', 'orderedList', 'taskList', 'blockquote', 'codeBlock']
+const ALIGNS = ['left', 'center', 'right', 'justify']
+
+/** Everything the toolbar shows as active, as one comparable string. */
+function toolbarStateKey(ed: Editor): string {
+  const flags: boolean[] = [
+    ...MARKS.map((m) => ed.isActive(m)),
+    ...BLOCKS.map((b) => ed.isActive(b)),
+    ...[1, 2, 3].map((level) => ed.isActive('heading', { level })),
+    ...ALIGNS.map((a) => ed.isActive({ textAlign: a }))
+  ]
+  return flags.map((f) => (f ? '1' : '0')).join('')
+}
 
 interface FormatToolbarProps {
   editor: Editor | null
@@ -15,6 +30,11 @@ export function FormatToolbar({
   appearanceOpen
 }: FormatToolbarProps): JSX.Element {
   const t = useT()
+  // Re-render only when the active marks/blocks change, not on every keystroke.
+  useEditorState({
+    editor,
+    selector: ({ editor: ed }) => (ed ? toolbarStateKey(ed) : '')
+  })
   const disabled = !editor
   const [styleOpen, setStyleOpen] = useState(false)
   const [menuPos, setMenuPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 })

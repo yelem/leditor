@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Editor } from '@tiptap/react'
+import { useEditorState, type Editor } from '@tiptap/react'
 import { searchKey } from './search-extension'
 import { useT } from '@renderer/lib/i18n'
 
@@ -23,9 +23,16 @@ export function FindBar({ editor, onClose, onNavigate }: FindBarProps): JSX.Elem
     inputRef.current?.select()
   }, [])
 
-  const st = editor ? searchKey.getState(editor.state) : undefined
-  const total = st?.matches.length ?? 0
-  const current = total > 0 ? (st?.current ?? 0) + 1 : 0
+  // Subscribe to the match counter (the editor itself no longer re-renders
+  // its children on every transaction).
+  const { total, current } = useEditorState({
+    editor,
+    selector: ({ editor: ed }) => {
+      const st = ed ? searchKey.getState(ed.state) : undefined
+      const n = st?.matches.length ?? 0
+      return { total: n, current: n > 0 ? (st?.current ?? 0) + 1 : 0 }
+    }
+  }) ?? { total: 0, current: 0 }
 
   const next = (): void => {
     editor?.chain().searchNext().run()
