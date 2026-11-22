@@ -255,12 +255,21 @@ await test('export/current-docx-fb2-epub', async () => {
     { projectPath: PROJECT, docId: idOf('rich') }
   )
   const res = { files: files.map((f) => path.basename(f)) }
+  // Every XML part of every format, for the well-formedness check below.
+  const xmlParts = []
   for (const f of files) {
     const buf = fs.readFileSync(f)
     if (f.endsWith('.fb2')) {
-      res.fb2 = buf.toString('utf8').replace(/<date[^>]*>[^<]*<\/date>/g, '').replace(/<id>[^<]*<\/id>/g, '')
+      const fb2 = buf.toString('utf8')
+      xmlParts.push([path.basename(f), fb2])
+      res.fb2 = fb2.replace(/<date[^>]*>[^<]*<\/date>/g, '').replace(/<id>[^<]*<\/id>/g, '')
     } else {
       const zip = await JSZip.loadAsync(buf)
+      for (const name of Object.keys(zip.files).sort()) {
+        if (/\.(xml|x?html|opf|ncx|rels)$/.test(name)) {
+          xmlParts.push([`${path.basename(f)}:${name}`, await zip.file(name).async('string')])
+        }
+      }
       if (f.endsWith('.docx')) res.docx = await zip.file('word/document.xml').async('string')
       else {
         const parts = []
@@ -272,6 +281,15 @@ await test('export/current-docx-fb2-epub', async () => {
     }
     if (HAS_WORD && f.endsWith('.docx')) res.docxInWord = word('open', ['-Path', f]).paragraphs
   }
+  // A reader rejects the whole book over one malformed part.
+  res.malformedXml = await page.evaluate((parts) => {
+    const bad = []
+    for (const [name, xml] of parts) {
+      const doc = new DOMParser().parseFromString(xml, 'application/xml')
+      if (doc.getElementsByTagName('parsererror').length > 0) bad.push(name)
+    }
+    return bad
+  }, xmlParts)
   return res
 })
 
@@ -811,6 +829,128 @@ await test('typewriter/keeps-caret-centered', async () => {
   await page.locator('.appearance__row--checkbox input').uncheck()
   await page.keyboard.press('Escape')
   return { caretFromCenterPx: Math.abs(offset) < 40 ? 'centered' : offset }
+})
+
+// --- guards in main (IPC called as a compromised page could) ---
+await test('guard/settings-cannot-move-backup-folder', async () => {
+  return await page.evaluate(async () => {
+    const current = await window.api.settings.get()
+    const saved = await window.api.settings.set({
+      ...current,
+      backup: { ...current.backup, customLocation: 'C:\\somewhere-else' }
+    })
+    return { customLocation: saved.backup.customLocation }
+  })
+})
+
+await test('guard/endpoint-change-forgets-key', async () => {
+  return await page.evaluate(async () => {
+    if (!(await window.api.ai.storageAvailable())) return { skipped: 'no secure storage' }
+    const id = crypto.randomUUID()
+    const s0 = await window.api.settings.get()
+    const profile = { id, name: 'T', kind: 'openai', baseUrl: 'http://127.0.0.1:9/v1', model: 'm' }
+    await window.api.settings.set({ ...s0, ai: { activeProfileId: id, profiles: [profile] } })
+    await window.api.ai.setKey(id, 'secret-test-key')
+    const s1 = await window.api.settings.get()
+    await window.api.settings.set({ ...s1, ai: { ...s1.ai, profiles: [{ ...profile, name: 'Renamed' }] } })
+    const afterRename = await window.api.ai.keyStatus(id)
+    const s2 = await window.api.settings.get()
+    await window.api.settings.set({
+      ...s2,
+      ai: { ...s2.ai, profiles: [{ ...profile, baseUrl: 'https://attacker.example/v1' }] }
+    })
+    const afterMove = await window.api.ai.keyStatus(id)
+    // Clean up: back to no profiles.
+    const s3 = await window.api.settings.get()
+    await window.api.settings.set({ ...s3, ai: { activeProfileId: null, profiles: [] } })
+    return { afterRename, afterMove, afterRemove: await window.api.ai.keyStatus(id) }
+  })
+})
+
+await test('guard/export-includes-just-typed-text', async () => {
+  // A long autosave delay: only the flush before export can save the text.
+  const setDelay = (ms) =>
+    page.evaluate(async (ms) => {
+      const s = await window.api.settings.get()
+      await window.api.settings.set({ ...s, autosaveDelayMs: ms })
+    }, ms)
+  await setDelay(10_000)
+  await page.reload()
+  await page.waitForSelector('.tree__label')
+  await open('E27')
+  await page.click(EDITOR)
+  await page.keyboard.type('Только что набранный текст')
+  // Straight to the export dialog — the autosave debounce has not fired yet.
+  await page.locator('.toolbar__dropdown .toolbar__btn').click()
+  await page.locator('.toolbar__menu-item', { hasText: 'Export…' }).click()
+  await page.locator('.export__format', { hasText: 'FB2' }).click()
+  await page.locator('.export__radio input').nth(3).check() // current chapter
+  await app.evaluate(({ dialog }, dir) => {
+    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [dir] })
+  }, OUTDIR)
+  await page.locator('.export .settings__minor-btn').first().click() // choose folder
+  await page.waitForFunction(() => !document.querySelector('.export__run')?.disabled)
+  await page.locator('.export__run').click()
+  await page.waitForFunction(() => document.querySelector('.export')?.textContent?.match(/\d/))
+  await wait(500)
+  await page.keyboard.press('Escape')
+  const file = path.join(OUTDIR, 'E27.fb2')
+  const fb2 = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''
+  await setDelay(600)
+  await page.reload()
+  await page.waitForSelector('.tree__label')
+  return { fileWritten: fb2.length > 0, hasJustTypedText: fb2.includes('Только что набранный текст') }
+})
+
+await test('guard/move-into-missing-parent-keeps-node', async () => {
+  return await page.evaluate(
+    async ({ projectPath, nodeId }) => {
+      let error = null
+      try {
+        await window.api.tree.move(projectPath, nodeId, 'no-such-folder', 0)
+      } catch (e) {
+        error = 'refused'
+      }
+      const manifest = await window.api.project.openPath(projectPath)
+      const stillThere = JSON.stringify(manifest.manifest.tree).includes(nodeId)
+      return { error, stillThere }
+    },
+    { projectPath: PROJECT, nodeId: idOf('e26') }
+  )
+})
+
+await test('app/drop-project-folder-opens-it', async () => {
+  // A second project, dropped onto the window as the OS would drop a folder.
+  const second = path.join(RUN, 'Dropped.bookproj')
+  fs.cpSync(PROJECT, second, { recursive: true })
+  const manifestFile = path.join(second, 'project.json')
+  const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'))
+  manifest.tree = manifest.tree.slice(0, 1).map((n) => ({ ...n, title: 'Dropped chapter' }))
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest))
+
+  const cdp = await page.context().newCDPSession(page)
+  const box = await page.locator('.editor__scroll').boundingBox()
+  const at = { x: Math.round(box.x + 50), y: Math.round(box.y + 50) }
+  const data = { items: [], files: [second], dragOperationsMask: 1 }
+  for (const type of ['dragEnter', 'dragOver', 'drop']) {
+    await cdp.send('Input.dispatchDragEvent', { type, ...at, data })
+  }
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('.tree__label')].some((l) => l.textContent === 'Dropped chapter'),
+    null,
+    { timeout: 10_000 }
+  ).catch(() => undefined)
+  const labels = await page.locator('.tree__label').allTextContents()
+  // Back to the suite project for whatever runs next.
+  for (const type of ['dragEnter', 'dragOver', 'drop']) {
+    await cdp.send('Input.dispatchDragEvent', { type, ...at, data: { ...data, files: [PROJECT] } })
+  }
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('.tree__label')].some((l) => l.textContent === 'Rich'),
+    null,
+    { timeout: 10_000 }
+  )
+  return { opened: labels.includes('Dropped chapter') }
 })
 
 // --- performance (timings only, not compared literally) ---

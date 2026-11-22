@@ -63,6 +63,9 @@ export const RICH = clean(
       t('новое', [{ type: 'insertion', attrs: { sid: 'sg-fixture-1' } }]),
       t(' конец.')
     ),
+    // Control characters as pasted from elsewhere (Word's manual line break
+    // is a vertical tab): not allowed in XML, must not break the export.
+    p(t('Управляющие\u000Bсимволы\u0001 внутри.')),
     p(t('Последний абзац.'))
   )
 )
