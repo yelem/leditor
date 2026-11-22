@@ -16,6 +16,8 @@ interface SettingsContextValue {
   loaded: boolean
   /** Merge partial top-level changes and persist to userData. */
   patch: (partial: Partial<GlobalSettings>) => void
+  /** Take settings main has already saved (e.g. after a dialog it showed). */
+  adopt: (saved: GlobalSettings) => void
   toggleTheme: () => void
 }
 
@@ -56,9 +58,31 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
     document.documentElement.lang = settings.language
   }, [settings.language])
 
+  // Only the reply to the latest save is applied: an earlier reply arriving
+  // after a newer change would roll the screen back, and the next patch built
+  // on that state would drop the newer change.
+  const saveSeqRef = useRef(0)
+
   const persist = useCallback((next: GlobalSettings) => {
+    const seq = ++saveSeqRef.current
     setSettings(next)
-    void window.api.settings.set(next).then((saved) => setSettings(saved))
+    window.api.settings
+      .set(next)
+      .then((saved) => {
+        if (seq === saveSeqRef.current) setSettings(saved)
+      })
+      .catch(() => {
+        // Not written: show what is actually stored instead of the edit.
+        if (seq !== saveSeqRef.current) return
+        void window.api.settings.get().then((stored) => {
+          if (seq === saveSeqRef.current) setSettings(stored)
+        })
+      })
+  }, [])
+
+  const adopt = useCallback((saved: GlobalSettings) => {
+    saveSeqRef.current++
+    setSettings(saved)
   }, [])
 
   const patch = useCallback(
@@ -74,8 +98,8 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
   }, [persist])
 
   const value = useMemo<SettingsContextValue>(
-    () => ({ settings, loaded, patch, toggleTheme }),
-    [settings, loaded, patch, toggleTheme]
+    () => ({ settings, loaded, patch, adopt, toggleTheme }),
+    [settings, loaded, patch, adopt, toggleTheme]
   )
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>

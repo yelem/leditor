@@ -312,7 +312,7 @@ function registerIpcHandlers(): void {
   registerSettingsIpc()
 
   // Backups.
-  registerBackupIpc()
+  registerBackupIpc(() => mainWindow)
 
   // Native dialogs (folder picker, etc.).
   registerDialogIpc(() => mainWindow)
@@ -376,8 +376,10 @@ app.whenReady().then(() => {
     Menu.setApplicationMenu(null)
   }
 
-  // Allow access to system fonts (Local Font Access API).
-  const allowedPermissions = new Set<string>(['local-fonts', 'clipboard-read'])
+  // Allow access to system fonts (Local Font Access API) and nothing else.
+  // Ordinary paste (keyboard, context menu) needs no permission; clipboard-read
+  // would only let page script read the clipboard silently, which it never does.
+  const allowedPermissions = new Set<string>(['local-fonts'])
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     callback(allowedPermissions.has(permission))
   })

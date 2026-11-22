@@ -4,6 +4,8 @@ import { useProject, useSettings } from '@renderer/store'
 import { ConfirmDialog } from '@renderer/components/common/ConfirmDialog'
 import { LANGUAGE_LOCALES, type TranslationKey } from '@shared/i18n'
 import { useT } from '@renderer/lib/i18n'
+import { flushAll } from '@renderer/lib/flush-registry'
+import { ipcErrorText } from '@renderer/lib/ipc-error'
 import './backups.css'
 
 const REASON_KEYS: Record<BackupReason, TranslationKey> = {
@@ -44,7 +46,7 @@ export function BackupsDialog({ onClose }: { onClose: () => void }): JSX.Element
       setList(await window.api.backup.list(projectPath))
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(ipcErrorText(err))
     } finally {
       setLoading(false)
     }
@@ -63,11 +65,13 @@ export function BackupsDialog({ onClose }: { onClose: () => void }): JSX.Element
     if (!projectPath) return
     setBusy(true)
     try {
+      // The snapshot copies files on disk: the last edits go there first.
+      await flushAll()
       await window.api.backup.snapshot(projectPath, 'manual')
       setError(null)
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(ipcErrorText(err))
     } finally {
       setBusy(false)
     }
@@ -81,7 +85,7 @@ export function BackupsDialog({ onClose }: { onClose: () => void }): JSX.Element
       setError(null)
       await reload()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(ipcErrorText(err))
     } finally {
       setBusy(false)
     }
@@ -94,7 +98,7 @@ export function BackupsDialog({ onClose }: { onClose: () => void }): JSX.Element
       await restoreBackup(id)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(ipcErrorText(err))
     } finally {
       setBusy(false)
     }

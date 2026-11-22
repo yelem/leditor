@@ -92,7 +92,18 @@ interface Run {
   br?: boolean
 }
 
-const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+/**
+ * Characters XML 1.0 does not allow: control codes and unpaired surrogates.
+ * Text pasted from elsewhere can carry them (Word's manual line break is a
+ * vertical tab), and a single one makes a reader reject the whole EPUB/FB2 and
+ * Word report unreadable content. Vertical tab and form feed read as spaces.
+ */
+const XML_INVALID =
+  /[\u0000-\u0008\u000E-\u001F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g
+const xmlSafe = (s: string): string => s.replace(/[\u000B\u000C]/g, ' ').replace(XML_INVALID, '')
+
+const esc = (s: string): string =>
+  xmlSafe(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const escAttr = (s: string): string => esc(s).replace(/"/g, '&quot;')
 
 /** Extract inline fragments from block content. */
@@ -105,7 +116,7 @@ function inlineRuns(nodes?: ProseMirrorNode[]): Run[] {
         continue
       }
       if (typeof n.text === 'string') {
-        const run: Run = { text: n.text }
+        const run: Run = { text: xmlSafe(n.text) }
         let dropped = false
         for (const m of n.marks ?? []) {
           if (m.type === 'bold') run.bold = true
@@ -179,7 +190,51 @@ const headingLevel = (n: ProseMirrorNode): number =>
   Math.min(3, Math.max(1, Number(n.attrs?.level ?? 1)))
 
 const codeText = (n: ProseMirrorNode): string =>
-  (n.content ?? []).map((c) => c.text ?? '').join('')
+  xmlSafe((n.content ?? []).map((c) => c.text ?? '').join(''))
+
+// ---------- Lists (shared by DOCX and FB2, which have no nested lists) ----------
+
+const LIST_TYPES = new Set(['bulletList', 'orderedList', 'taskList'])
+
+interface ListLine {
+  /** Nesting depth, 0 for the outer list. */
+  level: number
+  kind: 'bullet' | 'ordered' | 'task'
+  /** "1.", "•", "☐"/"☑" — empty on an item's second and later blocks. */
+  marker: string
+  block: ProseMirrorNode
+}
+
+/** A list flattened to one line per block, nested lists one level deeper. */
+function listLines(list: ProseMirrorNode, level = 0): ListLine[] {
+  const kind = list.type === 'orderedList' ? 'ordered' : list.type === 'taskList' ? 'task' : 'bullet'
+  const start = Number(list.attrs?.start) || 1
+  const out: ListLine[] = []
+  ;(list.content ?? []).forEach((item, i) => {
+    const marker =
+      kind === 'ordered' ? `${start + i}.` : kind === 'task' ? (item.attrs?.checked ? '☑' : '☐') : '•'
+    let first = true
+    for (const child of item.content ?? []) {
+      if (LIST_TYPES.has(child.type)) {
+        out.push(...listLines(child, level + 1))
+      } else {
+        out.push({ level, kind, marker: first ? marker : '', block: child })
+        first = false
+      }
+    }
+  })
+  return out
+}
+
+/** Split runs at line breaks (FB2 has no line break inside a paragraph). */
+function splitAtBreaks(runs: Run[]): Run[][] {
+  const lines: Run[][] = [[]]
+  for (const r of runs) {
+    if (r.br) lines.push([])
+    else lines[lines.length - 1].push(r)
+  }
+  return lines
+}
 
 // ---------- XHTML (for EPUB) ----------
 
@@ -205,7 +260,7 @@ function xhtmlBlock(node: ProseMirrorNode): string {
     case 'paragraph': {
       const { tabs, runs } = indentedRuns(node.content)
       const s = xhtmlInline(runs)
-      return `<p${blockStyle(node, tabs)}>${s || ' '}</p>`
+      return `<p${blockStyle(node, tabs)}>${s || '\u00a0'}</p>`
     }
     case 'heading':
       return `<h${headingLevel(node)}>${xhtmlInline(
@@ -217,10 +272,26 @@ function xhtmlBlock(node: ProseMirrorNode): string {
       return `<ul>${(node.content ?? [])
         .map((li) => `<li>${(li.content ?? []).map(xhtmlBlock).join('')}</li>`)
         .join('')}</ul>`
-    case 'orderedList':
-      return `<ol>${(node.content ?? [])
+    case 'orderedList': {
+      const start = Number(node.attrs?.start) || 1
+      return `<ol${start !== 1 ? ` start="${start}"` : ''}>${(node.content ?? [])
         .map((li) => `<li>${(li.content ?? []).map(xhtmlBlock).join('')}</li>`)
         .join('')}</ol>`
+    }
+    case 'taskList':
+      // No checkbox in a book: the state is shown as ☑/☐ before the item.
+      return `<ul class="tasks">${(node.content ?? [])
+        .map((li) => {
+          const mark: ProseMirrorNode = { type: 'text', text: li.attrs?.checked ? '☑ ' : '☐ ' }
+          // The mark goes inside the first paragraph, not on a line of its own.
+          const [first, ...rest] = li.content ?? []
+          const blocks =
+            first?.type === 'paragraph'
+              ? [{ ...first, content: [mark, ...(first.content ?? [])] }, ...rest]
+              : [{ type: 'paragraph', content: [mark] }, ...(li.content ?? [])]
+          return `<li>${blocks.map(xhtmlBlock).join('')}</li>`
+        })
+        .join('')}</ul>`
     case 'horizontalRule':
       return '<hr/>'
     case 'codeBlock':
@@ -248,7 +319,9 @@ const sectionXhtml = (sec: ExportSection, style: ExportStyle): string => {
 function fb2Inline(runs: Run[]): string {
   return runs
     .map((r) => {
-      if (r.br) return '<empty-line/>'
+      // A break inside a title or list line: FB2 allows no element for it
+      // there, so it reads as a space. Paragraphs split at breaks instead.
+      if (r.br) return ' '
       let t = esc(r.text)
       if (r.code) t = `<code>${t}</code>`
       if (r.italic) t = `<emphasis>${t}</emphasis>`
@@ -265,31 +338,29 @@ function fb2Block(node: ProseMirrorNode): string {
   switch (node.type) {
     case 'paragraph': {
       // FB2 has no indent attribute — readers indent every <p> themselves,
-      // so the leading tabs are simply dropped.
-      const s = fb2Inline(indentedRuns(node.content).runs)
-      return s.trim() ? `<p>${s}</p>` : '<empty-line/>'
+      // so the leading tabs are simply dropped. A line break has no element
+      // inside <p> either: each line becomes a paragraph of its own.
+      return splitAtBreaks(indentedRuns(node.content).runs)
+        .map((line) => {
+          const s = fb2Inline(line)
+          return s.trim() ? `<p>${s}</p>` : '<empty-line/>'
+        })
+        .join('')
     }
     case 'heading':
       return `<subtitle>${fb2Inline(indentedRuns(node.content).runs)}</subtitle>`
     case 'blockquote':
       return `<cite>${(node.content ?? []).map((c) => fb2Block(c)).join('')}</cite>`
     case 'bulletList':
-      return (node.content ?? [])
-        .map(
-          (li) =>
-            `<p>• ${(li.content ?? [])
-              .map((c) => fb2Inline(inlineRuns(c.content)))
-              .join(' ')}</p>`
-        )
-        .join('')
     case 'orderedList':
-      return (node.content ?? [])
-        .map(
-          (li, i) =>
-            `<p>${i + 1}. ${(li.content ?? [])
-              .map((c) => fb2Inline(inlineRuns(c.content)))
-              .join(' ')}</p>`
-        )
+    case 'taskList':
+      // No lists in FB2: one paragraph per item, nesting shown by indenting.
+      return listLines(node)
+        .map((l) => {
+          const pad = '\u00a0'.repeat(l.level * 4)
+          const head = l.marker ? `${l.marker} ` : '  '
+          return `<p>${pad}${esc(head)}${fb2Inline(inlineRuns(l.block.content))}</p>`
+        })
         .join('')
     case 'horizontalRule':
       return '<empty-line/><p>* * *</p><empty-line/>'
@@ -444,23 +515,21 @@ function blockToDocx(
     case 'blockquote':
       return (node.content ?? []).flatMap((child) => blockToDocx(child, style, opts))
     case 'bulletList':
-      return (node.content ?? []).flatMap((li) =>
-        (li.content ?? []).map(
-          (c) => new Paragraph({ bullet: { level: 0 }, children: runsToDocx(inlineRuns(c.content)) })
-        )
-      )
     case 'orderedList':
-      return (node.content ?? []).flatMap((li, i) =>
-        (li.content ?? []).map(
-          (c) =>
-            new Paragraph({
-              children: [
-                new TextRun({ text: `${i + 1}. ` }),
-                ...runsToDocx(inlineRuns(c.content))
-              ]
-            })
-        )
-      )
+    case 'taskList':
+      return listLines(node).map((l) => {
+        const runs = runsToDocx(inlineRuns(l.block.content))
+        // Word's own bullets for bullet items; numbers and task marks as
+        // text, indented by level (no numbering definition to maintain).
+        if (l.kind === 'bullet' && l.marker) {
+          return new Paragraph({ bullet: { level: Math.min(l.level, 8) }, children: runs })
+        }
+        const step = convertMillimetersToTwip(6.35)
+        return new Paragraph({
+          indent: { left: step * (l.level + 1), hanging: l.marker ? step : 0 },
+          children: l.marker ? [new TextRun({ text: `${l.marker}\t` }), ...runs] : runs
+        })
+      })
     case 'horizontalRule':
       return [
         new Paragraph({
@@ -473,7 +542,10 @@ function blockToDocx(
       return [
         new Paragraph({
           pageBreakBefore: opts.pageBreakBefore,
-          children: [new TextRun({ text: codeText(node), font: 'Courier New' })]
+          // A newline inside a run reads as a space in Word: break explicitly.
+          children: codeText(node)
+            .split('\n')
+            .map((line, i) => new TextRun({ text: line, font: 'Courier New', break: i > 0 ? 1 : undefined }))
         })
       ]
     default:
@@ -529,7 +601,7 @@ export async function buildDocx(
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
           pageBreakBefore: newPage,
-          children: [new TextRun({ text: sec.title })]
+          children: [new TextRun({ text: xmlSafe(sec.title) })]
         })
       )
     } else if (style.chapterTitle === 'centered') {
@@ -538,7 +610,7 @@ export async function buildDocx(
           alignment: AlignmentType.CENTER,
           pageBreakBefore: newPage,
           spacing: { after: 240 },
-          children: [new TextRun({ text: sec.title, bold: true })]
+          children: [new TextRun({ text: xmlSafe(sec.title), bold: true })]
         })
       )
     }
@@ -560,7 +632,7 @@ export async function buildDocx(
     // Justified prose without hyphenation stretches the word spacing — Word
     // hyphenates only when asked to.
     hyphenation: style.hyphenation ? { autoHyphenation: true } : undefined,
-    title: unit.title,
+    title: xmlSafe(unit.title),
     creator: author || undefined,
     lastModifiedBy: author || undefined,
     description: meta.homePage || undefined,
@@ -635,7 +707,8 @@ export async function buildEpub(
           `-webkit-hyphenate-limit-before:3;-webkit-hyphenate-limit-after:3}`
         : `body,p{-webkit-hyphens:none;-epub-hyphens:none;hyphens:none}`) +
       `p.chapter-title{text-align:center;font-weight:bold;margin:1em 0}` +
-      `hr{border:none;text-align:center}hr:after{content:"* * *"}`
+      `hr{border:none;text-align:center}hr:after{content:"* * *"}` +
+      `ul.tasks{list-style:none;padding-left:0}`
   )
 
   const chapters = unit.sections.map((sec, i) => ({

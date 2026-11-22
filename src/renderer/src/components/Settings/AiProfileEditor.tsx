@@ -128,7 +128,7 @@ export function AiProfileEditor({ profile, onSave, onCancel }: AiProfileEditorPr
               value={model}
               onChange={(e) => setModel(e.target.value)}
               list="ai-models"
-              placeholder={kind === 'anthropic' ? 'claude-opus-4-8' : t('ai.modelPlaceholder')}
+              placeholder={kind === 'anthropic' ? 'claude-opus-5-5' : t('ai.modelPlaceholder')}
             />
             <datalist id="ai-models">
               {models.map((m) => (

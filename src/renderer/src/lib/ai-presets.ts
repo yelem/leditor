@@ -12,7 +12,7 @@ export interface AiPreset {
 }
 
 export const AI_PRESETS: AiPreset[] = [
-  { id: 'claude', label: 'Claude (Anthropic)', kind: 'anthropic', baseUrl: '', model: 'claude-opus-4-8', needsKey: true },
+  { id: 'claude', label: 'Claude (Anthropic)', kind: 'anthropic', baseUrl: '', model: 'claude-opus-5-5', needsKey: true },
   { id: 'openai', label: 'ChatGPT (OpenAI)', kind: 'openai', baseUrl: 'https://api.openai.com/v1', model: 'gpt-5.1', needsKey: true },
   { id: 'deepseek', label: 'DeepSeek', kind: 'openai', baseUrl: 'https://api.deepseek.com', model: 'deepseek-chat', needsKey: true },
   {

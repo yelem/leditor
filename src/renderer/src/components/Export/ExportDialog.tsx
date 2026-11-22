@@ -14,6 +14,7 @@ import { useProject, useSettings } from '@renderer/store'
 import { type TranslationKey } from '@shared/i18n'
 import { useT } from '@renderer/lib/i18n'
 import { ipcErrorText } from '@renderer/lib/ipc-error'
+import { flushAll } from '@renderer/lib/flush-registry'
 import { NumberField } from '@renderer/components/common/NumberField'
 import { FontSelect } from '@renderer/components/common/FontSelect'
 import './export.css'
@@ -134,6 +135,8 @@ export function ExportDialog({ onClose, selectionIds }: ExportDialogProps): JSX.
     setResult(null)
     setProgress({ done: 0, total: 1 })
     try {
+      // Export reads chapters from disk: write the last edits there first.
+      await flushAll()
       const res = await window.api.export.run(projectPath, {
         format,
         granularity,

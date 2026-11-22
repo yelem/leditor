@@ -298,7 +298,9 @@ export function FileTree(): JSX.Element {
     if (!selectedIds.has(node.id)) selectOnly(node.id)
     setDragId(node.id)
     e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', node.id)
+    // A private type: as text/plain, a row dropped into the editor by accident
+    // would paste the node id into the chapter. The move itself uses dragId.
+    e.dataTransfer.setData('application/x-leditor-node', node.id)
   }
   const onDragOver = (e: React.DragEvent, node: TreeNode): void => {
     if (!dragId || dragId === node.id) return

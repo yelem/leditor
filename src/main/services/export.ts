@@ -77,8 +77,21 @@ async function writeExportFile(filePath: string, data: Buffer | string): Promise
   }
 }
 
+/**
+ * A chapter title as a file name every desktop OS accepts. Besides the
+ * reserved characters, Windows refuses control characters, a trailing dot or
+ * space, and device names such as CON or NUL (with any extension).
+ */
 function sanitizeFileName(name: string): string {
-  return name.replace(/[\\/:*?"<>|]+/g, '_').trim() || 'export'
+  let safe = name
+    .replace(/[\u0000-\u001F\u007F]+/g, ' ')
+    .replace(/[\\/:*?"<>|]+/g, '_')
+    .trim()
+    .replace(/[. ]+$/, '')
+    .slice(0, 150)
+    .trim()
+  if (/^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i.test(safe)) safe = `_${safe}`
+  return safe || 'export'
 }
 
 export async function exportProject(

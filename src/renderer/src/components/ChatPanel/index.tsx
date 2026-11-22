@@ -5,6 +5,8 @@ import { documentToText } from '@shared/document-text'
 import { useDocVersion, useProject, useSettings } from '@renderer/store'
 import { collectDocuments, findNodeTitle } from '@renderer/lib/tree'
 import { useT } from '@renderer/lib/i18n'
+import { flushAll } from '@renderer/lib/flush-registry'
+import { ipcErrorText } from '@renderer/lib/ipc-error'
 import './chat-panel.css'
 
 // Guard against oversized sends (a typical chapter fits entirely).
@@ -120,6 +122,16 @@ export function ChatPanel(): JSX.Element {
 
   // Load history and the summaries cache when a project opens.
   useEffect(() => {
+    // A reply still streaming belongs to the previous project: drop it, or it
+    // would be appended to — and saved into — the new project's chat.
+    const pending = reqRef.current
+    if (pending) {
+      reqRef.current = null
+      bufferRef.current = ''
+      setStreaming(false)
+      setThinkingSince(null)
+      void window.api.ai.abort(pending)
+    }
     if (!projectPath) {
       setMessages([])
       setSummaries({})
@@ -272,6 +284,8 @@ export function ChatPanel(): JSX.Element {
     reqRef.current = requestId
     setStreaming(true)
     try {
+      // The chapter is read from disk: let the latest edits reach it first.
+      await flushAll()
       const context = await buildContext()
       const recent = trimHistory(history)
       const toSend: AiChatMessage[] = context
@@ -285,7 +299,7 @@ export function ChatPanel(): JSX.Element {
       // otherwise the panel would stay in the streaming state and silently
       // swallow every further send.
       if (reqRef.current === requestId) {
-        finishRequest(t('chat.error', { msg: err instanceof Error ? err.message : String(err) }))
+        finishRequest(t('chat.error', { msg: ipcErrorText(err) }))
       }
     }
   }

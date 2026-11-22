@@ -6,14 +6,16 @@
  * when the app quits (see snapshotOnQuitIfNeeded).
  */
 
-import { ipcMain } from 'electron'
+import { dialog, ipcMain, type BrowserWindow } from 'electron'
 import { IpcChannels } from '@shared/ipc-contract'
 import type { BackupInfo, BackupReason } from '@shared/backup-types'
 import type { ProjectManifest } from '@shared/project-types'
-import { getSettings } from '../services/settings'
+import type { GlobalSettings } from '@shared/settings-types'
+import { getSettings, saveSettings, withSettingsLock } from '../services/settings'
 import { createSnapshot, deleteSnapshot, listSnapshots, restoreSnapshot } from '../services/backup'
 import { withLock } from '../services/lock'
 import { assertProject } from '../services/allowed-paths'
+import { tMain } from '../i18n'
 
 let currentProjectPath: string | null = null
 
@@ -29,7 +31,36 @@ function lockedSnapshot(
   )
 }
 
-export function registerBackupIpc(): void {
+/** Store the snapshots folder ('' = inside the project). */
+function saveBackupLocation(customLocation: string): Promise<GlobalSettings> {
+  return withSettingsLock(async () => {
+    const current = await getSettings()
+    return saveSettings({ ...current, backup: { ...current.backup, customLocation } })
+  })
+}
+
+export function registerBackupIpc(getWindow: () => BrowserWindow | null): void {
+  // The snapshots folder is where main writes copies and, on rotation, deletes
+  // them. So it is set only from a pick in a native dialog, never from a path
+  // string sent by the renderer (settings:set ignores the field).
+  ipcMain.handle(IpcChannels.backupPickLocation, async (): Promise<GlobalSettings> => {
+    const win = getWindow()
+    const options = {
+      title: tMain('main.dlgPickFolder'),
+      properties: ['openDirectory' as const, 'createDirectory' as const]
+    }
+    const result = win
+      ? await dialog.showOpenDialog(win, options)
+      : await dialog.showOpenDialog(options)
+    if (result.canceled || result.filePaths.length === 0) return getSettings()
+    return saveBackupLocation(result.filePaths[0])
+  })
+
+  ipcMain.handle(
+    IpcChannels.backupResetLocation,
+    (): Promise<GlobalSettings> => saveBackupLocation('')
+  )
+
   ipcMain.handle(IpcChannels.backupProjectOpened, async (_event, projectPath: string) => {
     currentProjectPath = assertProject(projectPath)
     const { backup } = await getSettings()

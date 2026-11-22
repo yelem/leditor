@@ -83,6 +83,10 @@ export const IpcChannels = {
   backupRestore: 'backup:restore',
   /** Delete a snapshot. */
   backupDelete: 'backup:delete',
+  /** Choose the snapshots folder in a native dialog (main owns this setting). */
+  backupPickLocation: 'backup:pickLocation',
+  /** Put snapshots back inside the project folder. */
+  backupResetLocation: 'backup:resetLocation',
 
   /** Pick a folder (native dialog). */
   dialogPickDirectory: 'dialog:pickDirectory',
@@ -210,6 +214,14 @@ export interface BackupApi {
   restore: (projectPath: string, id: string) => Promise<ProjectManifest>
   /** Delete a snapshot. */
   delete: (projectPath: string, id: string) => Promise<void>
+  /**
+   * Choose the snapshots folder in a native dialog. Returns the saved settings
+   * (unchanged when the dialog was cancelled). settings:set ignores the field:
+   * a folder main writes and deletes in must come from the user, not a string.
+   */
+  pickLocation: () => Promise<GlobalSettings>
+  /** Back to the default (inside the project). Returns the saved settings. */
+  resetLocation: () => Promise<GlobalSettings>
 }
 
 /** General-purpose native dialogs. */
@@ -237,6 +249,11 @@ export interface AppEventsApi {
   onWillClose: (callback: () => void) => () => void
   /** Tell main that unsaved changes are written — the window may close. */
   closeReady: () => Promise<void>
+  /**
+   * Filesystem path of a dropped file or folder ('' when it has none). File.path
+   * is gone since Electron 32; webUtils is the replacement and lives in preload.
+   */
+  pathForFile: (file: File) => string
 }
 
 /** Editor link to the native context menu and dictionary. */

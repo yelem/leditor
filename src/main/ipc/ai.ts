@@ -7,20 +7,20 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-contract'
 import {
-  type AiProfile,
   type AiChatMessage,
   type AiModelInfo,
   type AiProfileDraft,
   type AiTestResult,
   type GrammarEdit
 } from '@shared/ai-types'
-import { getSettings } from '../services/settings'
+import { getSettings, withSettingsLock } from '../services/settings'
 import { createProvider, type AiProvider } from '../services/ai-provider'
 import {
   deleteKey,
   getKey,
   hasKey,
   isKeyStorageAvailable,
+  sameKeyEndpoint,
   setKey
 } from '../services/ai-keys'
 import { tMain } from '../i18n'
@@ -43,15 +43,6 @@ async function activeProvider(): Promise<AiProvider> {
   })
 }
 
-/** Same endpoint, ignoring a trailing slash — as OpenAICompatProvider builds its URLs. */
-function sameEndpoint(saved: AiProfile, draft: AiProfileDraft): boolean {
-  if (saved.kind !== draft.kind) return false
-  // An anthropic profile always talks to the official API; baseUrl is unused.
-  if (draft.kind === 'anthropic') return true
-  const trim = (url: string): string => url.trim().replace(/\/+$/, '')
-  return trim(saved.baseUrl) === trim(draft.baseUrl ?? '')
-}
-
 /**
  * Provider for an unsaved draft — the profile editor's "Test" and "Load models".
  *
@@ -71,7 +62,7 @@ async function draftProvider(draft: AiProfileDraft): Promise<AiProvider> {
     // No saved key — nothing to protect, and the draft may well be a local
     // model that needs none: let the request go as it always did.
     if (saved && (await hasKey(saved.id))) {
-      if (!sameEndpoint(saved, draft)) throw new Error(tMain('main.errKeyForNewUrl'))
+      if (!sameKeyEndpoint(saved, draft)) throw new Error(tMain('main.errKeyForNewUrl'))
       key = (await getKey(saved.id)) ?? ''
     }
   }
@@ -114,11 +105,11 @@ export function registerAiIpc(): void {
   )
 
   ipcMain.handle(IpcChannels.aiSetKey, (_e, profileId: string, key: string): Promise<void> =>
-    setKey(profileId, key)
+    withSettingsLock(() => setKey(profileId, key))
   )
 
   ipcMain.handle(IpcChannels.aiDeleteKey, (_e, profileId: string): Promise<void> =>
-    deleteKey(profileId)
+    withSettingsLock(() => deleteKey(profileId))
   )
 
   ipcMain.handle(

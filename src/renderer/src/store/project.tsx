@@ -12,6 +12,7 @@ import type { NodeType, ProjectManifest, ProjectSettings } from '@shared/project
 import { findNode } from '@renderer/lib/tree'
 import { flushAll } from '@renderer/lib/flush-registry'
 import { tGlobal } from '@renderer/lib/i18n'
+import { ipcErrorText } from '@renderer/lib/ipc-error'
 
 /** Scope of the combined single-page view. */
 export type CombinedScope = { type: 'all' } | { type: 'folder'; id: string }
@@ -83,10 +84,8 @@ const INITIAL_STATE: ProjectState = {
 const ProjectContext = createContext<ProjectContextValue | null>(null)
 const DocVersionContext = createContext(0)
 
-function errorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message
-  return String(err)
-}
+/** What main said, without Electron's "Error invoking remote method" wrapper. */
+const errorMessage = ipcErrorText
 
 export function ProjectProvider({ children }: { children: ReactNode }): JSX.Element {
   const [state, setState] = useState<ProjectState>(INITIAL_STATE)
@@ -186,9 +185,16 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
 
   const closeProject = useCallback(() => {
     const path = stateRef.current.projectPath
-    // The state is reset right below, so the banner is the only way the failed
-    // on-close snapshot can be reported at all.
-    if (path) void window.api.backup.projectClosing(path).catch(reportBackupError)
+    // Pending edits are written before the on-close snapshot copies the files:
+    // flushAll starts every write before the state reset below unmounts the
+    // editor. The state is reset right away, so the banner is the only way a
+    // failed on-close snapshot can be reported at all.
+    const flushed = flushAll()
+    if (path) {
+      void flushed
+        .then(() => window.api.backup.projectClosing(path))
+        .catch(reportBackupError)
+    }
     localStorage.removeItem(LAST_PROJECT_KEY)
     setState(INITIAL_STATE)
   }, [reportBackupError])
@@ -365,6 +371,8 @@ export function ProjectProvider({ children }: { children: ReactNode }): JSX.Elem
     const path = stateRef.current.projectPath
     if (!path) return null
     try {
+      // The copy is made from the files on disk: write the last edits first.
+      await flushAll()
       const { manifest, nodeId: newId } = await window.api.tree.duplicate(path, nodeId)
       setState((s) => ({ ...s, manifest }))
       return newId

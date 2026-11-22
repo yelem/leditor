@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { IpcChannels, type AppApi } from '@shared/ipc-contract'
 import type { AiStreamEvent } from '@shared/ai-types'
 import type { ExportProgress } from '@shared/export-types'
@@ -57,7 +57,9 @@ const api: AppApi = {
       ipcRenderer.invoke(IpcChannels.backupSnapshot, projectPath, reason),
     list: (projectPath) => ipcRenderer.invoke(IpcChannels.backupList, projectPath),
     restore: (projectPath, id) => ipcRenderer.invoke(IpcChannels.backupRestore, projectPath, id),
-    delete: (projectPath, id) => ipcRenderer.invoke(IpcChannels.backupDelete, projectPath, id)
+    delete: (projectPath, id) => ipcRenderer.invoke(IpcChannels.backupDelete, projectPath, id),
+    pickLocation: () => ipcRenderer.invoke(IpcChannels.backupPickLocation),
+    resetLocation: () => ipcRenderer.invoke(IpcChannels.backupResetLocation)
   },
   dialog: {
     pickDirectory: () => ipcRenderer.invoke(IpcChannels.dialogPickDirectory),
@@ -83,7 +85,14 @@ const api: AppApi = {
       ipcRenderer.on(IpcChannels.appWillClose, listener)
       return () => ipcRenderer.removeListener(IpcChannels.appWillClose, listener)
     },
-    closeReady: () => ipcRenderer.invoke(IpcChannels.appCloseReady)
+    closeReady: () => ipcRenderer.invoke(IpcChannels.appCloseReady),
+    pathForFile: (file) => {
+      try {
+        return webUtils.getPathForFile(file)
+      } catch {
+        return ''
+      }
+    }
   },
   ai: {
     storageAvailable: () => ipcRenderer.invoke(IpcChannels.aiStorageAvailable),

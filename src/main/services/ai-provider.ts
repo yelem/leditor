@@ -177,6 +177,20 @@ function splitForGrammar(text: string, limit: number): string[] {
   return chunks.filter((c) => c.trim().length > 0)
 }
 
+/**
+ * Reply budget of a Claude chat turn. Current Claude models think before they
+ * answer and that thinking counts against max_tokens; the request streams, so
+ * a large budget costs nothing until it is used.
+ */
+const ANTHROPIC_CHAT_MAX_TOKENS = 64000
+
+/** Model list and connection test: a hung server must not freeze the dialog. */
+const LIST_TIMEOUT_MS = 30_000
+const TEST_TIMEOUT_MS = 120_000
+
+/** Default Claude model when a profile names none. */
+const DEFAULT_CLAUDE_MODEL = 'claude-opus-5-5'
+
 abstract class BaseProvider implements AiProvider {
   abstract chat(messages: AiChatMessage[], opts?: ChatOptions): Promise<string>
   abstract listModels(): Promise<AiModelInfo[]>
@@ -244,8 +258,11 @@ abstract class BaseProvider implements AiProvider {
 
   async testConnection(): Promise<AiTestResult> {
     try {
+      // The budget leaves room for a reasoning model to think first: a tiny one
+      // made a healthy connection fail with an empty reply.
       const reply = await this.chat([{ role: 'user', content: 'Reply with a single word: hello.' }], {
-        maxTokens: 64
+        maxTokens: 2048,
+        signal: AbortSignal.timeout(TEST_TIMEOUT_MS)
       })
       return { ok: true, reply: reply.trim().slice(0, 200) }
     } catch (error) {
@@ -276,7 +293,9 @@ class AnthropicProvider extends BaseProvider {
     const stream = client.messages.stream(
       {
         model: this.model,
-        max_tokens: opts?.maxTokens ?? 8192,
+        // Current models think before answering and the thinking counts
+        // against this limit, so a chat reply gets a streaming-sized budget.
+        max_tokens: opts?.maxTokens ?? ANTHROPIC_CHAT_MAX_TOKENS,
         system: system || undefined,
         messages: conversation
       },
@@ -288,14 +307,23 @@ class AnthropicProvider extends BaseProvider {
       full += delta
       opts?.onDelta?.(delta)
     })
-    await stream.finalMessage()
+    stream.on('thinking', () => opts?.onThinking?.())
+    const message = await stream.finalMessage()
+    // A declined request and a budget spent on thinking both end with no
+    // text — say so instead of returning an empty reply.
+    if (message.stop_reason === 'refusal') throw new Error(tMain('main.errRefusal'))
+    if (!full && message.stop_reason === 'max_tokens') {
+      throw new EmptyReplyError(tMain('main.errEmptyReply'))
+    }
     return full
   }
 
   async listModels(): Promise<AiModelInfo[]> {
     const client = new Anthropic({ apiKey: this.apiKey })
-    const list = await client.models.list()
-    return list.data.map((m) => ({ id: m.id }))
+    const out: AiModelInfo[] = []
+    // Iterating the page walks every page, not just the first.
+    for await (const m of client.models.list({}, { timeout: LIST_TIMEOUT_MS })) out.push({ id: m.id })
+    return out
   }
 }
 
@@ -416,7 +444,10 @@ class OpenAICompatProvider extends BaseProvider {
   }
 
   async listModels(): Promise<AiModelInfo[]> {
-    const res = await fetch(this.url('/models'), { headers: this.headers() })
+    const res = await fetch(this.url('/models'), {
+      headers: this.headers(),
+      signal: AbortSignal.timeout(LIST_TIMEOUT_MS)
+    })
     if (!res.ok) throw new Error(tMain('main.errServerModels', { status: res.status }))
     const json = (await res.json()) as { data?: Array<{ id?: string }> }
     return (json.data ?? [])
@@ -431,7 +462,7 @@ export function createProvider(
   params: { apiKey: string; baseUrl: string; model: string }
 ): AiProvider {
   if (kind === 'anthropic') {
-    return new AnthropicProvider(params.apiKey, params.model || 'claude-opus-4-8')
+    return new AnthropicProvider(params.apiKey, params.model || DEFAULT_CLAUDE_MODEL)
   }
   return new OpenAICompatProvider(params.baseUrl, params.apiKey, params.model)
 }

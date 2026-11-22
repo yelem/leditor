@@ -74,26 +74,37 @@ export function insertNode(
   parentId: string | null,
   index?: number
 ): TreeNode[] {
+  // The index arrives from the renderer: a negative, fractional or NaN value
+  // must not land the node somewhere unexpected.
+  const position = (length: number): number =>
+    index === undefined || !Number.isFinite(index)
+      ? length
+      : Math.max(0, Math.min(length, Math.trunc(index)))
+
   if (parentId === null) {
     const next = [...tree]
-    next.splice(index ?? next.length, 0, node)
+    next.splice(position(next.length), 0, node)
     return next
   }
 
-  return tree.map((current) => {
-    if (current.id === parentId) {
-      if (current.type !== 'folder') {
-        throw new Error('Child nodes can only be added to a folder')
+  // A parent that is not in the tree would otherwise drop the node silently —
+  // after a move had already taken it out of its old place.
+  const parent = findNode(tree, parentId)
+  if (!parent) throw new Error('Parent node not found')
+  if (parent.type !== 'folder') throw new Error('Child nodes can only be added to a folder')
+
+  const insertInto = (nodes: TreeNode[]): TreeNode[] =>
+    nodes.map((current) => {
+      if (current.id === parentId) {
+        const children = [...current.children]
+        children.splice(position(children.length), 0, node)
+        return { ...current, children }
       }
-      const children = [...current.children]
-      children.splice(index ?? children.length, 0, node)
-      return { ...current, children }
-    }
-    if (current.children.length > 0) {
-      return { ...current, children: insertNode(current.children, node, parentId, index) }
-    }
-    return current
-  })
+      return current.children.length > 0
+        ? { ...current, children: insertInto(current.children) }
+        : current
+    })
+  return insertInto(tree)
 }
 
 /** Remove a node by id. Returns the new tree and the removed node (or null). */

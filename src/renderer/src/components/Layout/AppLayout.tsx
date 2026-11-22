@@ -7,6 +7,7 @@ import { CombinedView } from '@renderer/components/Combined/CombinedView'
 import { RightPanel } from '@renderer/components/RightPanel'
 import { Resizer } from './Resizer'
 import { useT } from '@renderer/lib/i18n'
+import { flushAll } from '@renderer/lib/flush-registry'
 import './layout.css'
 
 /** Application shell: toolbar on top + three working panels. */
@@ -45,7 +46,7 @@ export function AppLayout(): JSX.Element {
     const onDrop = (e: DragEvent): void => {
       const file = e.dataTransfer?.files?.[0]
       if (!file) return
-      const path = (file as File & { path?: string }).path
+      const path = window.api.app.pathForFile(file)
       if (path && path.toLowerCase().endsWith('.bookproj')) {
         e.preventDefault()
         void openProjectByPath(path)
@@ -66,7 +67,10 @@ export function AppLayout(): JSX.Element {
     if (!projectPath || backupInterval <= 0) return
     const id = setInterval(
       () => {
-        void window.api.backup.snapshot(projectPath, 'interval').catch(reportBackupError)
+        // Pending edits first: the snapshot copies what is on disk.
+        void flushAll()
+          .then(() => window.api.backup.snapshot(projectPath, 'interval'))
+          .catch(reportBackupError)
       },
       backupInterval * 60 * 1000
     )

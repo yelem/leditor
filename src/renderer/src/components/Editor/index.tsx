@@ -11,6 +11,7 @@ import { useProject, useSettings, useUi } from '@renderer/store'
 import { findNodeTitle } from '@renderer/lib/tree'
 import { registerFlusher } from '@renderer/lib/flush-registry'
 import { useT } from '@renderer/lib/i18n'
+import { ipcErrorText } from '@renderer/lib/ipc-error'
 import { editorExtensions } from './extensions'
 import { restoreTabHtml, wordSafeTabHtml } from './clipboard-tabs'
 import { clipboardFragment } from './clipboard-fragment'
@@ -399,7 +400,7 @@ export function Editor(): JSX.Element {
       } catch (err) {
         // A cancelled request is not shown as an error.
         if (aiRequestRef.current === requestId) {
-          setAiError(err instanceof Error ? err.message : String(err))
+          setAiError(ipcErrorText(err))
         }
       } finally {
         if (aiRequestRef.current === requestId) aiRequestRef.current = null

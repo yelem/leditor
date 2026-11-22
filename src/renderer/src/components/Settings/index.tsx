@@ -25,7 +25,7 @@ const TABS: Array<{ id: TabId; labelKey: TranslationKey }> = [
 /** Global application settings screen (stored in userData). */
 export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Element {
   const t = useT()
-  const { settings, patch } = useSettings()
+  const { settings, patch, adopt } = useSettings()
   const { manifest, updateSettings } = useProject()
   const { defaults, backup, typography, exportMeta } = settings
   const [tab, setTab] = useState<TabId>('appearance')
@@ -336,9 +336,8 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Elemen
                       <button
                         type="button"
                         className="settings__minor-btn"
-                        onClick={async () => {
-                          const dir = await window.api.dialog.pickDirectory()
-                          if (dir) patch({ backup: { ...backup, customLocation: dir } })
+                        onClick={() => {
+                          void window.api.backup.pickLocation().then(adopt).catch(() => undefined)
                         }}
                       >
                         {t('settings.chooseFolder')}
@@ -347,7 +346,9 @@ export function SettingsDialog({ onClose }: { onClose: () => void }): JSX.Elemen
                         type="button"
                         className="settings__minor-btn"
                         disabled={!backup.customLocation}
-                        onClick={() => patch({ backup: { ...backup, customLocation: '' } })}
+                        onClick={() => {
+                          void window.api.backup.resetLocation().then(adopt).catch(() => undefined)
+                        }}
                       >
                         {t('settings.byDefault')}
                       </button>

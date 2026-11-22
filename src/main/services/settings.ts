@@ -27,7 +27,18 @@ import {
 } from '@shared/export-types'
 import { type UiLanguage, UI_LANGUAGES } from '@shared/settings-types'
 import { atomicWriteJson } from './storage'
+import { withLock } from './lock'
 import { setMainLanguage } from '../i18n'
+
+/**
+ * Settings and AI-key writes run one at a time, in the order they arrive.
+ * Two quick saves could otherwise land on disk in reverse, and a save that
+ * forgets a key (see ipc/settings) must not overtake the key set right after
+ * it. The key is not a path, so it cannot collide with the project locks.
+ */
+export function withSettingsLock<T>(fn: () => Promise<T>): Promise<T> {
+  return withLock('\u0000settings', fn)
+}
 
 function settingsFilePath(): string {
   return join(app.getPath('userData'), 'settings.json')

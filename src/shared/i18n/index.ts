@@ -432,6 +432,9 @@ export const en = {
   'main.errServerModels': 'Server responded {status} when requesting the model list',
   'main.errEmptyReply':
     'The model returned an empty reply: its reasoning used up the whole reply budget. Try again, or pick a model without extended reasoning.',
+  'main.errBadProfileId': 'Invalid AI profile id: {id}',
+  'main.errRefusal': 'The model declined this request.',
+  'main.errTimeout': 'The server did not respond in time.',
   'main.errStorageUnavailable': 'System secure storage is unavailable — the key was not saved'
 } as const
 
@@ -841,6 +844,9 @@ const uk: Record<TranslationKey, string> = {
   'main.errServerModels': 'Сервер відповів {status} на запит списку моделей',
   'main.errEmptyReply':
     'Модель повернула порожню відповідь: її роздуми з’їли весь ліміт відповіді. Спробуйте ще раз або оберіть модель без розширених роздумів.',
+  'main.errBadProfileId': 'Некоректний ідентифікатор профілю ШІ: {id}',
+  'main.errRefusal': 'Модель відмовилася виконувати цей запит.',
+  'main.errTimeout': 'Сервер не відповів вчасно.',
   'main.errStorageUnavailable': 'Системне безпечне сховище недоступне — ключ не збережено'
 }
 
@@ -1247,6 +1253,9 @@ const ru: Record<TranslationKey, string> = {
   'main.errServerModels': 'Сервер ответил {status} при запросе списка моделей',
   'main.errEmptyReply':
     'Модель вернула пустой ответ: её рассуждения съели весь лимит ответа. Попробуйте ещё раз или выберите модель без расширенных рассуждений.',
+  'main.errBadProfileId': 'Некорректный идентификатор профиля ИИ: {id}',
+  'main.errRefusal': 'Модель отказалась выполнять этот запрос.',
+  'main.errTimeout': 'Сервер не ответил вовремя.',
   'main.errStorageUnavailable': 'Системное безопасное хранилище недоступно — ключ не сохранён'
 }
 
