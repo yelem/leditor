@@ -79,6 +79,7 @@ Requirements: [Node.js](https://nodejs.org) 20.19+ or 22.12+ (what electron-vite
 npm install
 npm run dev        # run in development mode
 npm run typecheck  # type checking
+npm run test:e2e   # end-to-end editor suite (see tests/editor-e2e/README.md)
 ```
 
 ### Windows installer
@@ -108,7 +109,7 @@ App icons are generated from code — `npm run icons` rebuilds
 
 - [Electron](https://www.electronjs.org/) + [electron-vite](https://electron-vite.org/) + [electron-builder](https://www.electron.build/)
 - [React](https://react.dev/) 18, TypeScript
-- [TipTap](https://tiptap.dev/) 2 (ProseMirror) for the editor
+- [TipTap](https://tiptap.dev/) 3 (ProseMirror) for the editor
 - [docx](https://github.com/dolanmiu/docx) and [JSZip](https://stuk.github.io/jszip/) for exports
 - `@anthropic-ai/sdk` for Claude; plain `fetch` + SSE for OpenAI-compatible providers
 
