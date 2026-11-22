@@ -185,7 +185,7 @@ export function Editor(): JSX.Element {
     if (!editor) return
     loadedDocIdRef.current = null
     if (!projectPath || !activeDocId) {
-      editor.commands.clearContent()
+      editor.commands.clearContent(false)
       setDocCount({ words: 0, chars: 0 })
       return
     }
@@ -195,7 +195,7 @@ export function Editor(): JSX.Element {
       .load(projectPath, activeDocId)
       .then((doc) => {
         if (cancelled || editor.isDestroyed) return
-        editor.commands.setContent(doc ?? createEmptyDocument(), false)
+        editor.commands.setContent(doc ?? createEmptyDocument(), { emitUpdate: false })
         // ProseMirror renders synchronously, so the new height is already
         // there: put the chapter back where it was left.
         const scroll = scrollRef.current

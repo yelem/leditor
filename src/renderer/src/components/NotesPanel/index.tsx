@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { EditorContent, useEditor, useEditorState, type Editor as TipTapEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
-import Placeholder from '@tiptap/extension-placeholder'
+import { Placeholder } from '@tiptap/extensions'
 import { DEFAULT_PROJECT_SETTINGS } from '@shared/project-types'
 import { useProject } from '@renderer/store'
 import { findNodeTitle } from '@renderer/lib/tree'
@@ -15,8 +14,15 @@ import { FontSize } from './font-size'
 import './notes.css'
 
 const notesExtensions = [
-  StarterKit.configure({ heading: { levels: [2, 3] }, horizontalRule: false }),
-  Underline,
+  // Underline is part of StarterKit since v3. Link, list keymap and the
+  // trailing node are new there too; notes never had them.
+  StarterKit.configure({
+    heading: { levels: [2, 3] },
+    horizontalRule: false,
+    link: false,
+    listKeymap: false,
+    trailingNode: false
+  }),
   FontSize,
   Placeholder.configure({ placeholder: () => tGlobal('notes.placeholder') })
 ]
@@ -115,14 +121,14 @@ export function NotesPanel(): JSX.Element {
     void flush()
     if (!projectPath || !activeDocId) {
       ctxRef.current = null
-      editor.commands.setContent('', false)
+      editor.commands.setContent('', { emitUpdate: false })
       return
     }
     ctxRef.current = { path: projectPath, id: activeDocId }
     let cancelled = false
     setStatus('idle')
     window.api.workspace.loadNote(projectPath, activeDocId).then((raw) => {
-      if (!cancelled) editor.commands.setContent(noteToHtml(raw), false)
+      if (!cancelled) editor.commands.setContent(noteToHtml(raw), { emitUpdate: false })
     })
     return () => {
       cancelled = true

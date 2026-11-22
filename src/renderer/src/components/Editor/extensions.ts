@@ -1,17 +1,13 @@
 import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
-import { tGlobal } from '@renderer/lib/i18n'
-import CharacterCount from '@tiptap/extension-character-count'
-import Underline from '@tiptap/extension-underline'
-import TextAlign from '@tiptap/extension-text-align'
-import Highlight from '@tiptap/extension-highlight'
-import Link from '@tiptap/extension-link'
-import Superscript from '@tiptap/extension-superscript'
-import Subscript from '@tiptap/extension-subscript'
-import TaskList from '@tiptap/extension-task-list'
-import TaskItem from '@tiptap/extension-task-item'
-import HorizontalRule from '@tiptap/extension-horizontal-rule'
+import { CharacterCount, Placeholder } from '@tiptap/extensions'
+import { TaskItem, TaskList } from '@tiptap/extension-list'
+import { TextAlign } from '@tiptap/extension-text-align'
+import { Highlight } from '@tiptap/extension-highlight'
+import { Superscript } from '@tiptap/extension-superscript'
+import { Subscript } from '@tiptap/extension-subscript'
+import { HorizontalRule } from '@tiptap/extension-horizontal-rule'
 import type { Extensions } from '@tiptap/react'
+import { tGlobal } from '@renderer/lib/i18n'
 import { TabIndent } from './tab-indent'
 import { EmptySelectAll } from './empty-select-all'
 import { InsertionMark, DeletionMark } from './suggestion-marks'
@@ -37,14 +33,24 @@ export const editorExtensions: Extensions = [
     horizontalRule: false,
     // Smaller edit-grouping delay: every typing pause starts a separate undo
     // step, so Ctrl+Z does not roll back a whole paragraph at once.
-    history: { newGroupDelay: 200 }
+    undoRedo: { newGroupDelay: 200 },
+    // Link and Underline are part of StarterKit since v3.
+    link: {
+      openOnClick: false,
+      autolink: true,
+      HTMLAttributes: { rel: 'noopener', target: '_blank', class: null }
+    },
+    // Not in the v2 editor: a forced empty paragraph after a closing list or
+    // quote would change every saved chapter.
+    trailingNode: false,
+    // New in v3 StarterKit; changes Backspace/Delete at list item edges.
+    // Kept off so list editing behaves exactly as before.
+    listKeymap: false
   }),
   SceneBreak,
-  Underline,
   Highlight,
   Superscript,
   Subscript,
-  Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: 'noopener' } }),
   TaskList,
   TaskItem.configure({ nested: true }),
   TextAlign.configure({ types: ['heading', 'paragraph'] }),

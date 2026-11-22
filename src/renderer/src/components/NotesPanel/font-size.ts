@@ -1,4 +1,4 @@
-import TextStyle from '@tiptap/extension-text-style'
+import { TextStyle } from '@tiptap/extension-text-style'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
