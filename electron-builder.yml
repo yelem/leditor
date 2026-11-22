@@ -15,7 +15,12 @@ publish:
   repo: leditor
 files:
   - '!**/.vscode/*'
-  - '!**/.claude/*'
+  - '!**/.claude/**'
+  # Local-only files (kept out of git via .git/info/exclude) must stay out of
+  # the package too: electron-builder packs from disk, not from git.
+  - '!**/CLAUDE.md'
+  - '!**/CLAUDE.local.md'
+  - '!docs/**'
   - '!src/*'
   - '!scripts/*'
   - '!tests/**'
