@@ -14,6 +14,7 @@ import { useT } from '@renderer/lib/i18n'
 import { editorExtensions } from './extensions'
 import { restoreTabHtml, wordSafeTabHtml } from './clipboard-tabs'
 import { clipboardFragment } from './clipboard-fragment'
+import { sliceToPlainText } from './plain-text-clipboard'
 import { setTypographyConfig } from './typography'
 import { FormatToolbar } from './FormatToolbar'
 import { AppearancePopover } from './AppearancePopover'
@@ -134,7 +135,9 @@ export function Editor(): JSX.Element {
     autofocus: false,
     editorProps: {
       attributes: { class: 'editor__prose', spellcheck: 'true' },
-      transformPastedHTML: (html) => restoreTabHtml(clipboardFragment(html))
+      transformPastedHTML: (html) => restoreTabHtml(clipboardFragment(html)),
+      // A direct prop wins over tiptap's own serializer plugin.
+      clipboardTextSerializer: sliceToPlainText
     },
     onUpdate: ({ editor }) => onUpdateRef.current(editor),
     // Components that show live editor state subscribe to it themselves

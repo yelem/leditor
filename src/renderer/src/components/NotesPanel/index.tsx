@@ -10,6 +10,7 @@ import { useT, tGlobal } from '@renderer/lib/i18n'
 import { NumberField } from '@renderer/components/common/NumberField'
 import { Icon, type IconName } from '../Editor/Icons'
 import { clipboardFragment } from '../Editor/clipboard-fragment'
+import { sliceToPlainText } from '../Editor/plain-text-clipboard'
 import { FontSize } from './font-size'
 import './notes.css'
 
@@ -88,7 +89,8 @@ export function NotesPanel(): JSX.Element {
     content: '',
     editorProps: {
       attributes: { class: 'notes__prose', spellcheck: 'true' },
-      transformPastedHTML: clipboardFragment
+      transformPastedHTML: clipboardFragment,
+      clipboardTextSerializer: sliceToPlainText
     },
     onUpdate: ({ editor }) => onUpdateRef.current(editor)
   })

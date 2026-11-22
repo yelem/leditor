@@ -192,7 +192,13 @@ function word(mode, extra = [], attempt = 1) {
   return JSON.parse(fs.readFileSync(out, 'utf8').replace(/^\uFEFF/, ''))
 }
 /** Html part of a CF_HTML payload (what a paste hands to the page). */
-const htmlPart = (s) => (s.indexOf('<html') >= 0 ? s.slice(s.indexOf('<html')) : s)
+// .NET can hand back bytes past the CF_HTML end offset; cut at </html>.
+const htmlPart = (s) => {
+  const start = s.indexOf('<html')
+  const end = s.lastIndexOf('</html>')
+  if (start < 0) return s
+  return end > start ? s.slice(start, end + '</html>'.length) : s.slice(start)
+}
 
 async function test(name, fn, { word: needsWord = false } = {}) {
   if (ONLY && !ONLY.test(name)) return
@@ -372,6 +378,19 @@ await test('clipboard/copy-hardbreak-and-empty', async () => {
   await page.click(EDITOR)
   await paste()
   return { clip: c, doc: await saved('e6') }
+})
+
+await test('clipboard/plain-text-roundtrip', async () => {
+  // Copy, keep only the text/plain flavor (as Notepad would), paste back.
+  await open('Rich copy src')
+  await page.click(EDITOR)
+  await page.keyboard.press('Control+a')
+  const c = await copy()
+  await open('E30')
+  await page.click(EDITOR)
+  await writeClip({ text: c.text })
+  await paste()
+  return { text: c.text, doc: await saved('e30') }
 })
 
 await test('paste/plain-text', async () => {
