@@ -93,7 +93,7 @@ export const DOCS = {
   aiDoc: { title: 'AiDoc', content: SIMPLE('Мама мыла раму. Папа читал газету. Кот спал.') },
   findDoc: { title: 'FindDoc', content: clean(doc(p(t('кот и Кот и КОТ.')), p(t('ещё кот')))) }
 }
-for (let i = 1; i <= 30; i++) DOCS[`e${i}`] = { title: `E${i}`, content: EMPTY }
+for (let i = 1; i <= 31; i++) DOCS[`e${i}`] = { title: `E${i}`, content: EMPTY }
 
 const idOf = (key) => `t-${key}`
 

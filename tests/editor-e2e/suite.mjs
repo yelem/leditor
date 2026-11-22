@@ -553,6 +553,21 @@ await test('type/backspace-undoes-typography', async () => {
   return await saved('e16')
 })
 
+await test('type/quote-keeps-formatting', async () => {
+  await open('E31')
+  await page.click(EDITOR)
+  await page.keyboard.type('Он ')
+  await page.keyboard.press('Control+b')
+  await page.keyboard.type('жирный')
+  await page.keyboard.press('Control+b')
+  await page.keyboard.type(' и ')
+  await page.keyboard.press('Control+i')
+  await page.keyboard.type('курсив')
+  await page.keyboard.press('Control+i')
+  await page.keyboard.type(' "цитата" и "ещё')
+  return await saved('e31')
+})
+
 await test('type/markdown-input-rules', async () => {
   await open('E17')
   await page.click(EDITOR)
